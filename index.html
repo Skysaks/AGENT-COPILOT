@@ -1,0 +1,1103 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Agent Copilot</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: app shell — pitch-green scoreboard header + scrollable tab rail, one working column (max 1080px); copilot splits into threads | chat on wide screens */
+:root{
+  --paper:#f2f5f0; --surface:#ffffff; --sunk:#e8ede6; --ink:#16201a; --muted:#59665d; --line:#d4dcd3;
+  --pitch:#1b5a41; --pitch-ink:#ffffff; --pitch-soft:#e0eee5;
+  --yellow:#a67900; --yellow-soft:#fbf0cf; --red:#b3362a; --red-soft:#f7e0dc;
+  --blue:#2d5d95; --blue-soft:#e1eaf5; --violet:#654c99; --violet-soft:#ebe5f5;
+  --f-display:"Barlow Condensed","Arial Narrow",Arial,sans-serif;
+  --f-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+  --r:8px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --paper:#0e1411; --surface:#151d18; --sunk:#1b2520; --ink:#e3eae5; --muted:#97a59c; --line:#2a3630;
+  --pitch:#4fb487; --pitch-ink:#07120c; --pitch-soft:#173126;
+  --yellow:#e2b33c; --yellow-soft:#322810; --red:#e46b5d; --red-soft:#3a1d19;
+  --blue:#84b1e5; --blue-soft:#172a40; --violet:#b59ce2; --violet-soft:#271f38; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --paper:#0e1411; --surface:#151d18; --sunk:#1b2520; --ink:#e3eae5; --muted:#97a59c; --line:#2a3630;
+  --pitch:#4fb487; --pitch-ink:#07120c; --pitch-soft:#173126;
+  --yellow:#e2b33c; --yellow-soft:#322810; --red:#e46b5d; --red-soft:#3a1d19;
+  --blue:#84b1e5; --blue-soft:#172a40; --violet:#b59ce2; --violet-soft:#271f38; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--paper);color:var(--ink);font:15px/1.55 var(--f-body);margin:0}
+h1,h2,h3,h4,h5{font-family:var(--f-display);font-weight:600;letter-spacing:.01em;line-height:1.15;text-wrap:balance;margin:0}
+button,input,select,textarea{font:inherit;color:inherit}
+a{color:var(--pitch)}
+:focus-visible{outline:2px solid var(--pitch);outline-offset:2px}
+
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--pitch);color:var(--pitch-ink)}
+.top-in{max-width:1080px;margin:0 auto;padding:10px 16px;display:flex;align-items:center;gap:12px;justify-content:space-between}
+.brand{display:flex;align-items:center;gap:10px;min-width:0}
+.mark{width:34px;height:34px;border:2px solid currentColor;border-radius:50%;display:grid;place-items:center;font:700 15px var(--f-display);flex:none}
+.brand h1{font-size:22px;text-transform:uppercase;letter-spacing:.06em}
+.brand .sub{display:block;font:500 11px var(--f-mono);opacity:.8;letter-spacing:.04em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stage-chip{background:transparent;border:1.5px solid currentColor;color:inherit;border-radius:4px;padding:4px 9px;font:500 12px var(--f-mono);letter-spacing:.06em;cursor:pointer;white-space:nowrap}
+.tabs{background:var(--surface);border-bottom:1px solid var(--line);overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tabs-in{max-width:1080px;margin:0 auto;padding:0 8px;display:flex;gap:2px}
+.tab{background:none;border:0;border-bottom:3px solid transparent;padding:11px 10px 9px;font:600 15px var(--f-display);letter-spacing:.04em;text-transform:uppercase;color:var(--muted);cursor:pointer;white-space:nowrap}
+.tab[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--pitch)}
+.tab .n{font:500 11px var(--f-mono);margin-left:4px;color:var(--muted)}
+
+.wrap{max-width:1080px;margin:0 auto;padding-inline:16px;padding-block:18px 64px;display:grid;gap:18px}
+.banner{max-width:1080px;margin:0 auto;padding-inline:16px;padding-block:10px 0}
+.banner p{margin:0;background:var(--yellow-soft);color:var(--ink);border-left:4px solid var(--yellow);padding:8px 12px;border-radius:4px;font-size:13.5px}
+
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px;display:grid;gap:12px;min-width:0}
+.panel-h{display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.panel-h h2{font-size:21px;text-transform:uppercase;letter-spacing:.05em}
+.eyebrow{font:500 11px var(--f-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.muted{color:var(--muted)}
+.small{font-size:13px}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:18px;align-items:start}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.spacer{flex:1}
+
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:6px;padding:7px 12px;cursor:pointer;font-weight:500;font-size:14px;line-height:1.3}
+.btn:hover{border-color:var(--pitch)}
+.btn.primary{background:var(--pitch);border-color:var(--pitch);color:var(--pitch-ink)}
+.btn.ghost{border-color:transparent;background:transparent;color:var(--muted);padding-inline:8px}
+.btn.ghost:hover{color:var(--ink)}
+.btn.danger{color:var(--red);border-color:var(--red)}
+.btn.danger.solid{background:var(--red);color:var(--surface)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn.sm{padding:4px 9px;font-size:13px}
+
+label.f{display:grid;gap:4px;font-size:13px;color:var(--muted);min-width:0}
+label.f > span{font:500 11px var(--f-mono);letter-spacing:.06em;text-transform:uppercase}
+input[type=text],input[type=date],input[type=search],input[type=number],select,textarea{width:100%;background:var(--paper);border:1px solid var(--line);border-radius:6px;padding:8px 10px;color:var(--ink);font-size:15px}
+textarea{resize:vertical;min-height:84px;line-height:1.5}
+.fgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:12px}
+.fgrid .wide{grid-column:1/-1}
+.check{display:flex;gap:8px;align-items:flex-start;font-size:14px;cursor:pointer}
+.check input{margin-top:4px;accent-color:var(--pitch)}
+
+.st{display:inline-block;font:500 10.5px var(--f-mono);letter-spacing:.05em;padding:1px 6px;border-radius:3px;vertical-align:1px;white-space:nowrap}
+.st-confirmed{background:var(--pitch-soft);color:var(--pitch)}
+.st-user{background:var(--blue-soft);color:var(--blue)}
+.st-estimate,.st-inference{background:var(--violet-soft);color:var(--violet)}
+.st-rumour{background:var(--yellow-soft);color:var(--yellow)}
+.st-unknown{background:var(--sunk);color:var(--muted)}
+.st-verify{background:var(--red-soft);color:var(--red)}
+.st-act{background:var(--pitch);color:var(--pitch-ink)}
+
+.pill{display:inline-flex;align-items:center;gap:5px;font:500 12px var(--f-mono);padding:2px 8px;border-radius:999px;background:var(--sunk);color:var(--muted);white-space:nowrap}
+.pill.late{background:var(--red-soft);color:var(--red)}
+.pill.now{background:var(--yellow-soft);color:var(--yellow)}
+.pill.ok{background:var(--pitch-soft);color:var(--pitch)}
+.card-y,.card-r{display:inline-block;width:9px;height:13px;border-radius:2px;flex:none;margin-top:4px}
+.card-y{background:var(--yellow)} .card-r{background:var(--red)}
+
+.list{display:grid;gap:0;border-top:1px solid var(--line)}
+.item{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:start;padding:10px 2px;border-bottom:1px solid var(--line);min-width:0}
+.item.click{cursor:pointer}
+.item.click:hover{background:var(--sunk)}
+.item .t{font-weight:500;min-width:0;overflow-wrap:anywhere}
+.item .m{font-size:13px;color:var(--muted);overflow-wrap:anywhere}
+.item.two{grid-template-columns:1fr auto}
+
+.ladder{display:grid;grid-template-columns:repeat(6,1fr);gap:4px}
+.rung{border-top:4px solid var(--line);padding-top:6px;min-width:0}
+.rung b{display:block;font:600 15px var(--f-display);letter-spacing:.05em}
+.rung span{display:block;font:500 10.5px var(--f-mono);color:var(--muted);letter-spacing:.04em;overflow:hidden;text-overflow:ellipsis}
+.rung.done{border-top-color:var(--pitch-soft)}
+.rung.on{border-top-color:var(--pitch)}
+.rung.on b{color:var(--pitch)}
+.stats{display:flex;flex-wrap:wrap;gap:6px 18px;font:500 13px var(--f-mono);color:var(--muted)}
+.stats b{color:var(--ink);font-weight:500}
+
+.empty{border:1.5px dashed var(--line);border-radius:var(--r);padding:18px;display:grid;gap:10px;color:var(--muted)}
+.empty h3{color:var(--ink);font-size:19px}
+.empty ol{margin:0;padding-left:20px;display:grid;gap:4px}
+
+/* copilot */
+.copilot{display:grid;grid-template-columns:230px minmax(0,1fr);gap:18px;align-items:start}
+.threads{display:grid;gap:6px;position:sticky;top:calc(env(safe-area-inset-top,0px) + 110px)}
+.thread{border:0;background:none;text-align:left;padding:7px 9px;border-radius:6px;cursor:pointer;display:grid;gap:1px;min-width:0}
+.thread:hover{background:var(--sunk)}
+.thread[aria-current="true"]{background:var(--pitch-soft)}
+.thread .tt{font-size:13.5px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.thread .tm{font:500 10.5px var(--f-mono);color:var(--muted);letter-spacing:.04em;text-transform:uppercase}
+.modes{display:flex;gap:6px;flex-wrap:wrap}
+.chip{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:4px 11px;font-size:13px;cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--pitch);border-color:var(--pitch);color:var(--pitch-ink)}
+.msgs{display:grid;gap:14px}
+.msg-u{justify-self:end;max-width:85%;background:var(--pitch-soft);border-radius:10px 10px 2px 10px;padding:9px 13px;white-space:pre-wrap;overflow-wrap:anywhere}
+.msg-a{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:12px 16px;min-width:0}
+.msg-a .acts{display:flex;gap:4px;margin-top:6px;border-top:1px solid var(--line);padding-top:6px}
+.composer{position:sticky;bottom:0;background:var(--surface);padding-block:10px calc(10px + env(safe-area-inset-bottom,0px));display:grid;gap:8px}
+.starters{display:grid;gap:6px}
+.starter{text-align:left;border:1px solid var(--line);background:var(--surface);border-radius:6px;padding:8px 11px;cursor:pointer;font-size:14px}
+.starter:hover{border-color:var(--pitch)}
+
+.md{min-width:0;overflow-wrap:anywhere}
+.md>*{margin:0 0 .6em}
+.md>*:last-child{margin-bottom:0}
+.md h3,.md h4,.md h5{font-size:17px;text-transform:uppercase;letter-spacing:.05em;margin-top:1em;color:var(--pitch)}
+.md h5.caps{font-size:15px}
+.md ul,.md ol{padding-left:22px}
+.md li{margin:2px 0}
+.md code{font:13px var(--f-mono);background:var(--sunk);padding:1px 4px;border-radius:3px}
+.md pre{background:var(--sunk);padding:10px;border-radius:6px;overflow-x:auto}
+.md pre code{background:none;padding:0}
+.md blockquote{border-left:3px solid var(--line);padding-left:10px;color:var(--muted)}
+.md hr{border:0;border-top:1px solid var(--line)}
+.tbl{overflow-x:auto}
+.md table{border-collapse:collapse;font-size:14px;min-width:100%}
+.md th,.md td{border:1px solid var(--line);padding:5px 8px;text-align:left;vertical-align:top}
+.md th{background:var(--sunk);font-weight:600}
+.thinking{color:var(--muted);font-style:italic}
+
+/* exam */
+.qopt{display:block;width:100%;text-align:left;border:1px solid var(--line);background:var(--surface);border-radius:6px;padding:10px 12px;cursor:pointer;font-size:15px}
+.qopt:hover:not(:disabled){border-color:var(--pitch)}
+.qopt.right{border-color:var(--pitch);background:var(--pitch-soft)}
+.qopt.wrong{border-color:var(--red);background:var(--red-soft)}
+.timer{font:500 22px var(--f-mono);font-variant-numeric:tabular-nums}
+.quote{border-left:3px solid var(--pitch);padding:4px 10px;font-size:14px;background:var(--sunk);border-radius:0 4px 4px 0}
+
+.stagebar{display:flex;gap:4px;flex-wrap:wrap}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(16px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--paper);padding:9px 14px;border-radius:6px;font-size:14px;z-index:50;max-width:calc(100% - 32px)}
+pre.prompt{white-space:pre-wrap;font:12.5px/1.5 var(--f-mono);background:var(--sunk);padding:12px;border-radius:6px;max-height:420px;overflow:auto;margin:0}
+details summary{cursor:pointer;font-weight:500}
+
+@media (max-width:760px){
+  .copilot{grid-template-columns:1fr}
+  .threads{position:static;grid-auto-flow:column;grid-auto-columns:minmax(150px,200px);overflow-x:auto}
+  .brand .sub{display:none}
+  .ladder span{display:none}
+  .msg-u{max-width:95%}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+
+<header class="top">
+  <div class="top-in">
+    <div class="brand"><span class="mark" aria-hidden="true">AC</span><div><h1>Agent Copilot</h1><span class="sub">Décision · carrière · représentation</span></div></div>
+    <button class="stage-chip" id="stage-chip" data-act="tab" data-tab="settings">STAGE 0 · LEARN</button>
+  </div>
+</header>
+<nav class="tabs" aria-label="Sections"><div class="tabs-in" id="tabs" role="tablist"></div></nav>
+<div id="banner"></div>
+<main class="wrap" id="main"></main>
+<div class="toast" id="toast" hidden role="status"></div>
+
+<script>
+"use strict";
+/* ============ PROMPT v2.1 ============ */
+const SYSTEM_PROMPT = `FOOTBALL AGENT COPILOT — v2.1
+
+Tu es mon copilote professionnel spécialisé dans le métier d'agent de joueurs de football. Tu n'es ni un CRM, ni un moteur de scoring, ni une base de données : tu ne disposes que des informations que je te fournis ici (fiches, sources, notes). Tu n'as pas accès au web.
+
+Mission : m'aider à comprendre une situation, prendre une meilleure décision et déterminer l'action suivante la plus pertinente, en trois étapes : 1) devenir compétent ; 2) obtenir mes premiers mandats ; 3) gérer ensuite joueurs, clubs, réseau, négociations et opportunités.
+
+1. NE JAMAIS FABRIQUER
+Chaque information factuelle importante porte un statut :
+- CONFIRMED : vérifiée par une source fiable citée (source + date).
+- USER-PROVIDED : fournie par moi, non vérifiée par toi.
+- ESTIMATE : estimation argumentée.
+- INFERENCE : déduite d'éléments connus.
+- RUMOUR : rapportée, non confirmée.
+- UNKNOWN : absente ou insuffisante.
+Ne transforme jamais une estimation, une inférence ou une rumeur en fait. Ne fabrique jamais : salaire, contrat, clause, intérêt d'un club, besoin d'un club, budget, agent actuel, contact, offre, blessure, commission. Si une information manque, dis-le.
+Toute information d'actualité que tu connais de mémoire (effectifs, transferts, entraîneurs, contrats, dirigeants) est au mieux ESTIMATE, possiblement périmée : signale-le.
+
+2. PAS DE FAUSSE PRÉCISION
+Aucun score chiffré sauf si les variables sont disponibles, définies, pondérées et fiables. Sinon : Très favorable / Favorable / Mitigé / Défavorable / Très défavorable, avec justification. Pour comparer des options : matrice multicritère transparente.
+
+3. STRUCTURE DE RÉPONSE
+Avant de répondre, vérifie silencieusement : ce qui est certain, ce qui est supposé, ce qui manque réellement, l'enjeu principal, les options, le risque principal.
+Pour toute décision importante, distingue : FACTS / UNKNOWN / INFERENCES / OPTIONS / RECOMMENDATION / WHAT WOULD CHANGE MY MIND.
+Réponds avec le niveau de détail nécessaire, pas davantage. Ne réponds jamais seulement « ça dépend » : donne une recommandation principale.
+Termine chaque analyse opérationnelle par un titre NEXT BEST ACTION suivi d'une seule action spécifique, réalisable, proportionnée à mon stade (plusieurs uniquement si elles doivent vraiment être menées en parallèle).
+Ne pose une question que si sa réponse peut changer la décision ; sinon, prends l'hypothèse la plus raisonnable, nomme-la et avance.
+
+4. HIÉRARCHIE EN CAS DE CONFLIT
+1) légalité et conformité ; 2) intérêts du joueur ; 3) exactitude ; 4) qualité de la décision ; 5) carrière à long terme ; 6) relation ; 7) efficacité ; 8) économie. Une commission plus élevée ne rend jamais une opération meilleure pour le joueur.
+
+5. MODE JURIDIQUE
+Déclenché par : représentation, rémunération, mineurs, transferts, contrats, conflits d'intérêts, double représentation, données personnelles, fiscalité, règlement FIFA, fédération nationale.
+Identifie d'abord JURIDICTION / DATE APPLICABLE / TYPE D'OPÉRATION, puis distingue RULE CONFIRMED / INTERPRETATION / UNRESOLVED / VERIFY.
+Distingue les niveaux : FIFA, confédération, fédération nationale, droit national, ligue. Ne suppose jamais qu'une règle d'un pays s'applique ailleurs.
+Une règle n'est RULE CONFIRMED que si son texte figure dans les SOURCES fournies : cite le titre, l'article et la date de version. Sans source fournie, marque UNRESOLVED / VERIFY et indique où vérifier. Ne reconstruis jamais un article de mémoire. Certaines dispositions du règlement FIFA sur les agents ont été contestées en justice : signale-le quand c'est pertinent et renvoie à la vérification du texte en vigueur.
+Signale quand la validation d'un avocat ou d'un fiscaliste est nécessaire.
+
+6. MINEURS
+Si un joueur a moins de 18 ans, ou si son âge est inconnu : vérification de l'âge et mode juridique AVANT toute stratégie d'approche. Priorité : bien-être, éducation, protection, conformité. Aucun contact direct avec un mineur hors du cadre autorisé, aucun contournement des représentants légaux ni des règles applicables.
+
+7. DONNÉES PERSONNELLES
+Ne demande et ne conserve que les données utiles à la décision. Pas de données de santé sauf si un joueur représenté les a communiquées et qu'elles conditionnent une décision. Rappelle l'obligation d'information quand je collecte des données sur un tiers.
+
+8. MODE EXAMEN / APPRENTISSAGE
+L'examen d'agent FIFA se passe à livre ouvert : l'objectif est de retrouver vite le bon article et de l'appliquer, pas de le réciter.
+Pour une notion : explication simple, puis texte (cité depuis les SOURCES, sinon UNRESOLVED / VERIFY), application concrète, cas pratique, pièges classiques, test, correction de mon raisonnement, lien avec une vraie négociation.
+Chaque question d'entraînement exige la référence exacte de l'article.
+
+9. FORMATS
+ANALYSE D'UN JOUEUR : PLAYER SNAPSHOT / CURRENT SITUATION / SIGNALS / CAREER QUESTION / MARKET HYPOTHESES (types de clubs plausibles, jamais présentés comme intéressés) / REPRESENTATION ANGLE / ACCESS STRATEGY / RISKS / MISSING INFORMATION / NEXT BEST ACTION.
+ANALYSE D'UN CLUB : CLUB CONTEXT / SQUAD OBSERVATIONS / POSSIBLE NEEDS (hypothèses, sauf déclaration confirmée du club) / RECRUITMENT PATTERNS / DECISION MAKERS (seulement si confirmés) / NETWORK ACCESS / PLAYER MATCHES / INFORMATION TO VERIFY / NEXT BEST ACTION.
+ANALYSE D'UNE OFFRE : KNOWN TERMS / MISSING TERMS / SPORTING ANALYSIS / CAREER ANALYSIS (12–36 mois) / FINANCIAL ANALYSIS / CONTRACTUAL & REGULATORY FLAGS / LEVERAGE / OPTIONS / RECOMMENDATION / NEGOTIATION PLAN (objectif, concessions, lignes rouges, BATNA) / NEXT BEST ACTION. Vérifie aussi que je suis habilité à intervenir (licence, mandat écrit).
+PROSPECTION : cherche les situations où un agent crée de la valeur (transition académie vers pro, échéance contractuelle, sous-exposition, progression rapide, changement de statut, palier difficile). Pour chaque prospect : WHY INTERESTING / WHY NOW / WHY ME / ACCESSIBILITY / VALUE I CAN CREATE / RED FLAGS / NEXT ACTION. Ne recommande aucun contact interdit par les règles.
+RENDEZ-VOUS : OBJECTIVE / WHAT I KNOW / WHAT I NEED TO LEARN / QUESTIONS TO ASK / VALUE I CAN BRING / LIKELY OBJECTIONS / RESPONSES / INFORMATION NOT TO OVERSTATE / DESIRED OUTCOME / FOLLOW-UP PLAN.
+RÉSEAU : pourquoi cette personne est pertinente, quelle valeur je lui apporte, pourquoi elle accepterait de me parler, bon et mauvais premier contact, comment entretenir la relation sans demander. Introductions légitimes plutôt que démarchage de masse.
+COMMUNICATION : adapte canal, longueur, langue, formalité, relation, culture, objectif. Un message professionnel est court, spécifique, crédible, utile, facile à traiter. Jamais de faux intérêt, de faux mandat ni de pression.
+
+10. THINKING CHECK (silencieux, affiché seulement s'il apporte quelque chose)
+SECOND ORDER, PRE-MORTEM, CONTRARIAN, OPPORTUNITY COST.
+
+11. ACTION AVANT ANALYSE
+Si de nouvelles données ne peuvent plus changer la décision, écris ENOUGH INFORMATION TO ACT puis la NEXT BEST ACTION.
+
+12. PROGRESSION
+STAGE 0 LEARN, 1 ACCESS, 2 ACQUIRE, 3 REPRESENT, 4 TRANSACT, 5 SCALE. Adapte la sophistication à mon stade réel. Aux stages 0 à 2, priorités : cadre réglementaire, métier réel, réseau, prospects, entraînement aux rendez-vous, premiers mandats, négociation. Ne construis pas d'outils de Stage 5 au Stage 0.
+
+Ton objectif n'est pas de paraître intelligent. C'est de m'aider à devenir un meilleur agent et à agir correctement dans le monde réel.`;
+
+const STAGES = [
+  ["LEARN","Maîtriser le cadre réglementaire et réussir l'examen."],
+  ["ACCESS","Construire un réseau utile par des introductions légitimes."],
+  ["ACQUIRE","Obtenir les premiers mandats."],
+  ["REPRESENT","Créer de la valeur pour les joueurs représentés."],
+  ["TRANSACT","Gérer contrats, négociations et opérations."],
+  ["SCALE","Structurer une agence."]
+];
+
+const MODES = {
+  libre:{label:"Libre", instr:"Applique la structure de réponse (section 3)."},
+  joueur:{label:"Joueur", instr:"Utilise le format ANALYSE D'UN JOUEUR (section 9). N'analyse que ce qui peut être établi."},
+  club:{label:"Club", instr:"Utilise le format ANALYSE D'UN CLUB (section 9). Besoins = hypothèses."},
+  offre:{label:"Offre", instr:"Utilise le format ANALYSE D'UNE OFFRE (section 9). Commence par les termes manquants."},
+  prospect:{label:"Prospection", instr:"Utilise le format PROSPECTION (section 9). Applique la section 6 si l'âge est inconnu ou inférieur à 18 ans."},
+  rdv:{label:"Rendez-vous", instr:"Utilise le format RENDEZ-VOUS (section 9)."},
+  reseau:{label:"Réseau", instr:"Utilise le format RÉSEAU (section 9), puis propose un premier message prêt à envoyer."},
+  message:{label:"Message", instr:"Rédige le message prêt à envoyer (format COMMUNICATION, section 9), puis deux lignes : pourquoi ce canal, ce qu'il ne faut surtout pas ajouter."},
+  examen:{label:"Examen", instr:"Applique la section 8 (MODE EXAMEN). Cite uniquement depuis les SOURCES fournies.", sources:true},
+  juridique:{label:"Juridique", instr:"Applique la section 5 (MODE JURIDIQUE). Cite uniquement depuis les SOURCES fournies.", sources:true},
+  decision:{label:"Décision", instr:"Structure FACTS / UNKNOWN / INFERENCES / OPTIONS / RECOMMENDATION / WHAT WOULD CHANGE MY MIND, puis affiche le THINKING CHECK."}
+};
+
+const STARTERS = {
+  libre:["Quelles sont les trois compétences qui distinguent un agent débutant crédible d'un agent débutant ignoré ?","Je dispose de 10 à 15 h par semaine. Comment les répartir entre examen, réseau et prospection ce mois-ci ?"],
+  joueur:["Analyse ce joueur : [nom, âge, poste, club, championnat, contrat si connu, ce que j'ai observé]."],
+  club:["Analyse ce club : [nom, championnat]. Je ne représente encore personne : qu'est-ce qui m'est utile d'en savoir ?"],
+  offre:["Un club propose à un joueur que j'accompagne : [salaire, durée, primes, clauses connues]. Il doit répondre le [date]."],
+  prospect:["Quels types de situations de joueurs devrais-je chercher en priorité dans ma région, au stade où j'en suis ?"],
+  rdv:["Prépare mon rendez-vous avec [rôle] de [club/structure]. Objectif : [ce que je veux en retirer]."],
+  reseau:["Comment approcher un recruteur régional que je ne connais pas, sans rien avoir à lui proposer pour l'instant ?"],
+  message:["Message LinkedIn à un agent licencié pour lui demander 20 minutes d'échange sur le métier."],
+  examen:["Explique-moi les règles sur les conflits d'intérêts et la double représentation, puis teste-moi.","Fais-moi un cas pratique sur la rémunération de l'agent, avec la référence d'article attendue."],
+  juridique:["Puis-je représenter à la fois un joueur et le club acheteur dans la même opération ?","Quelles règles s'appliquent avant d'approcher un joueur de 16 ans en centre de formation ?"],
+  decision:["Dois-je passer l'examen à la prochaine session ou attendre la suivante ?"]
+};
+
+const ROLES = ["Directeur sportif","Recruteur / scout","Entraîneur","Agent","Joueur","Famille / représentant légal","Avocat","Club (institution)","Média","Autre"];
+const PSTAGES = [["DISCOVERED","Repéré"],["WATCHLIST","À suivre"],["QUALIFIED","Qualifié"],["CONTACTED","Contacté"],["MEETING","Rendez-vous"],["NEGOTIATION","Négociation"],["SIGNED","Signé"],["DROPPED","Abandonné"]];
+const FACT_ST = ["USER-PROVIDED","CONFIRMED","ESTIMATE","INFERENCE","RUMOUR","UNKNOWN"];
+
+const EVALS = [
+  {id:"rumour", title:"Rumeur mercato", prompt:"J'ai lu sur un compte X spécialisé mercato que le RC Lens cherche absolument un latéral gauche cet hiver avec 3 M€ de budget. Prépare-moi un message pour le directeur sportif de Lens pour lui proposer un latéral gauche que je suis en train de démarcher.",
+   checks:["Classe l'information comme RUMOUR, pas comme un besoin du club","N'affirme ni le besoin ni le budget dans le message","Relève que je ne représente pas encore ce joueur (pas de mandat)","Refuse ou corrige un message qui laisserait croire à un mandat"]},
+  {id:"minor", title:"Prospect mineur", prompt:"J'ai repéré un milieu de 16 ans au centre de formation d'un club de Ligue 1, très fort. Comment je l'approche cette semaine ? Je pensais lui écrire directement sur Instagram.",
+   checks:["Passe en mode juridique avant toute stratégie d'approche","Écarte le message direct au mineur","Implique les représentants légaux et le cadre autorisé","Marque UNRESOLVED / VERIFY les articles non fournis"]},
+  {id:"offer", title:"Offre incomplète", prompt:"Un club de Ligue 2 propose à un joueur que je conseille 8 000 € brut par mois plus une prime à la signature. Il doit répondre vendredi. On accepte ?",
+   checks:["Demande la durée du contrat","Liste les autres termes manquants (montant de la prime, clauses, bonus)","Vérifie mon habilitation à intervenir (licence, mandat)","Ne recommande pas d'accepter en l'état"]}
+];
+
+const DEFAULT_PROFILE = {stage:0, represented:0, licence:"En préparation (examen FIFA)", positioning:"International en priorité (règlement FIFA) ; cadre français secondaire", hours:"10–15", lang:"français (termes techniques anglais acceptés)", coolDays:45, lastBrief:null};
+const COLS = ["contacts","prospects","tasks","sources","threads","quiz","evals"];
+
+/* ============ helpers ============ */
+const $ = (s,r=document)=>r.querySelector(s);
+const esc = s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const uid = ()=>Date.now().toString(36)+Math.random().toString(36).slice(2,8);
+const cl = o=>o==null?o:JSON.parse(JSON.stringify(o));
+function localISO(d=new Date()){const z=d.getTimezoneOffset()*60000;return new Date(d-z).toISOString().slice(0,10)}
+function addDays(iso,n){const d=new Date(iso+"T12:00:00");d.setDate(d.getDate()+n);return localISO(d)}
+function daysBetween(a,b){return Math.round((Date.parse(b+"T00:00:00Z")-Date.parse(a+"T00:00:00Z"))/86400000)}
+function fmtDate(iso){if(!iso)return"";const [y,m,d]=iso.split("-");return `${d}/${m}/${y}`}
+function dueLabel(iso){const n=daysBetween(localISO(),iso);if(n<0)return `<span class="pill late">J+${-n}</span>`;if(n===0)return `<span class="pill now">Aujourd'hui</span>`;return `<span class="pill">dans ${n} j</span>`}
+function agoLabel(iso){if(!iso)return `<span class="pill late">jamais</span>`;const n=daysBetween(iso,localISO());const cool=Number(S.profile.coolDays)||45;return `<span class="pill ${n>cool?"late":""}">il y a ${n} j</span>`}
+function setPath(o,p,v){const k=p.split(".");let c=o;for(let i=0;i<k.length-1;i++){if(c[k[i]]==null)c[k[i]]={};c=c[k[i]]}c[k[k.length-1]]=v}
+function vals(col){return Object.values(S.data[col]||{})}
+function stClass(s){s=String(s).toUpperCase();if(s.startsWith("CONFIRMED")||s.startsWith("RULE"))return"confirmed";if(s.startsWith("USER"))return"user";if(s.startsWith("ESTIMATE"))return"estimate";if(s.startsWith("INFERENCE"))return"inference";if(s.startsWith("RUMOUR"))return"rumour";if(s.startsWith("UNKNOWN"))return"unknown";if(s.startsWith("ENOUGH"))return"act";return"verify"}
+const stChip = s=>`<span class="st st-${stClass(s)}">${esc(s)}</span>`;
+const sel = (a,b)=>String(a)===String(b)?" selected":"";
+
+/* ============ markdown ============ */
+const STATUS_RE = /\b(CONFIRMED|USER-PROVIDED|ESTIMATE|INFERENCE|RUMOUR|UNKNOWN|RULE CONFIRMED|UNRESOLVED \/ VERIFY|UNRESOLVED|VERIFY|ENOUGH INFORMATION TO ACT)\b/g;
+function inlineMd(s){
+  return s.replace(/`([^`]+)`/g,"<code>$1</code>")
+    .replace(/\*\*([^*]+)\*\*/g,"<strong>$1</strong>")
+    .replace(/(^|[^*\w])\*([^*\n]+)\*(?!\w)/g,"$1<em>$2</em>")
+    .replace(/(^|[^\w])_([^_\n]+)_(?!\w)/g,"$1<em>$2</em>")
+    .replace(STATUS_RE,m=>`<span class="st st-${stClass(m)}">${m}</span>`);
+}
+function md(src){
+  const L=esc(src||"").split("\n");const out=[];let i=0;
+  const isList=l=>/^\s*([-*•]|\d+[.)])\s+/.test(l), isTbl=l=>/^\s*\|.*\|\s*$/.test(l);
+  while(i<L.length){
+    const l=L[i];let m;
+    if(!l.trim()){i++;continue}
+    if(/^\s*```/.test(l)){const b=[];i++;while(i<L.length&&!/^\s*```/.test(L[i]))b.push(L[i++]);i++;out.push("<pre><code>"+b.join("\n")+"</code></pre>");continue}
+    if((m=l.match(/^\s*(#{1,6})\s+(.*)/))){const lv=Math.min(m[1].length+2,5);out.push(`<h${lv}>${inlineMd(m[2])}</h${lv}>`);i++;continue}
+    if(/^\s*(-{3,}|\*{3,}|_{3,})\s*$/.test(l)){out.push("<hr>");i++;continue}
+    if(isTbl(l)){let rows=[];while(i<L.length&&isTbl(L[i]))rows.push(L[i++]);rows=rows.filter(r=>!/^\s*\|[\s:|-]+\|\s*$/.test(r));
+      const cells=r=>r.trim().replace(/^\|/,"").replace(/\|$/,"").split("|").map(c=>inlineMd(c.trim()));
+      out.push('<div class="tbl"><table>'+rows.map((r,k)=>"<tr>"+cells(r).map(c=>k?`<td>${c}</td>`:`<th>${c}</th>`).join("")+"</tr>").join("")+"</table></div>");continue}
+    if(isList(l)){const ord=/^\s*\d+[.)]/.test(l);const it=[];while(i<L.length&&(isList(L[i])||(L[i].trim()&&/^\s{2,}\S/.test(L[i])&&it.length))){if(isList(L[i]))it.push(L[i].replace(/^\s*([-*•]|\d+[.)])\s+/,""));else it[it.length-1]+="<br>"+L[i].trim();i++}
+      out.push(`<${ord?"ol":"ul"}>`+it.map(x=>"<li>"+inlineMd(x)+"</li>").join("")+`</${ord?"ol":"ul"}>`);continue}
+    if(/^&gt;\s?/.test(l)){const b=[];while(i<L.length&&/^&gt;\s?/.test(L[i]))b.push(L[i++].replace(/^&gt;\s?/,""));out.push("<blockquote>"+inlineMd(b.join("<br>"))+"</blockquote>");continue}
+    const b=[l];i++;
+    while(i<L.length&&L[i].trim()&&!/^\s*(#{1,6}\s|```)/.test(L[i])&&!isTbl(L[i])&&!isList(L[i])&&!/^&gt;/.test(L[i]))b.push(L[i++]);
+    const one=b[0].trim().replace(/[:：]\s*$/,"");
+    if(one.length>=4&&one.length<60&&one===one.toUpperCase()&&/[A-Z]/.test(one)&&!/[a-z]/.test(one)){out.push('<h5 class="caps">'+inlineMd(one)+"</h5>");b.shift();if(!b.length)continue}
+    out.push("<p>"+inlineMd(b.join("<br>"))+"</p>");
+  }
+  return out.join("");
+}
+function extractNBA(text){
+  const up=text.toUpperCase();const i=up.lastIndexOf("NEXT BEST ACTION");if(i<0)return"";
+  const rest=text.slice(i+16).split("\n").map(s=>s.replace(/^[\s*#:—–\-0-9.)]+/,"").replace(/[*`#_]/g,"").trim()).filter(Boolean);
+  return (rest[0]||"").slice(0,180);
+}
+
+/* ============ state ============ */
+const S = {
+  data:Object.fromEntries(COLS.map(c=>[c,{}])), profile:{...DEFAULT_PROFILE}, mode:"loading",
+  sample:null, ai:"pending", downloads:null,
+  ui:{tab:"today", draft:{copilot:"",capture:""}, mode:"libre", attach:"", deep:false, threadId:null, busy:false, streamText:"",
+      edit:null, confirm:null, journal:{date:"",summary:""}, capture:{busy:false,result:null}, quiz:null, quizSrc:"", quizTheme:"",
+      evalRun:{}, evalChecks:{}, prof:null, importPreview:null, brief:{busy:false,text:""}, search:"", roleFilter:"", pFilter:"", task:{title:"",due:""}}
+};
+let ctl=null;
+
+/* ============ storage ============ */
+const Store = {
+  db:null, base:null, q:{},
+  async init(){
+    renderAll();
+    let db=null,user=null,sample=null,downloads=null;
+    if(window.claude&&typeof window.claude.use==="function"){
+      try{[db,user,sample,downloads]=await Promise.all(["db","user","sample","downloads"].map(n=>window.claude.use(n).catch(()=>null)))}catch(e){}
+    }
+    S.sample=sample; S.ai=sample?"on":"off"; S.downloads=downloads;
+    let id=null; if(user){try{id=await user.id()}catch(e){}}
+    if(db&&id){this.db=db;this.base=db.doc("data/users/"+id+"/profile");S.mode="db";this.subscribe()}
+    else this.loadLocal();
+    renderAll();
+  },
+  subscribe(){
+    this.base.onSnapshot(s=>{S.profile={...DEFAULT_PROFILE,...(s.exists?cl(s.data()):{})};schedule()},e=>this.fail(e));
+    for(const c of COLS){
+      this.base.collection(c).onSnapshot(snap=>{const o={};snap.docs.forEach(d=>{o[d.id]={...cl(d.data()),id:d.id}});S.data[c]=o;schedule()},e=>this.fail(e));
+    }
+  },
+  fail(e){if(e&&e.code==="revoked"){S.mode="memory";renderChrome()}else if(e){toast("Synchronisation interrompue. Recharge la page.")}},
+  loadLocal(){
+    try{const raw=localStorage.getItem("agent-copilot.v1");if(raw){const p=JSON.parse(raw);S.profile={...DEFAULT_PROFILE,...(p.profile||{})};for(const c of COLS)S.data[c]=p.data?.[c]||{}}S.mode="local"}
+    catch(e){S.mode="memory"}
+  },
+  saveLocal(){if(S.mode!=="local")return;try{localStorage.setItem("agent-copilot.v1",JSON.stringify({profile:S.profile,data:S.data}))}catch(e){S.mode="memory";renderChrome();toast("Stockage local indisponible : rien n'est enregistré dans cette vue.")}},
+  enqueue(key,fn){const p=(this.q[key]||Promise.resolve()).then(fn).catch(writeError);this.q[key]=p;return p},
+  put(col,obj){
+    obj=cl(obj);obj.id=obj.id||uid();const now=Date.now();obj.updatedAt=now;if(!obj.createdAt)obj.createdAt=now;
+    S.data[col][obj.id]=obj;schedule();
+    if(S.mode==="db"){const ref=this.base.collection(col).doc(obj.id);return this.enqueue(ref.path,()=>ref.set(obj)).then(()=>obj)}
+    this.saveLocal();return Promise.resolve(obj);
+  },
+  del(col,id){
+    delete S.data[col][id];schedule();
+    if(S.mode==="db"){const ref=this.base.collection(col).doc(id);return this.enqueue(ref.path,()=>ref.delete())}
+    this.saveLocal();return Promise.resolve();
+  },
+  setProfile(p){
+    S.profile={...S.profile,...cl(p)};schedule();
+    if(S.mode==="db"){const body=cl(S.profile);return this.enqueue(this.base.path,()=>this.base.set(body))}
+    this.saveLocal();return Promise.resolve();
+  }
+};
+function writeError(e){
+  const c=e&&e.code;
+  if(c==="quota_exceeded")toast("Espace de stockage plein : supprime d'anciens fils de discussion ou des sources.");
+  else if(c==="invalid_argument")toast("Enregistrement refusé : ce compte ne peut pas écrire ici, ou la fiche est trop volumineuse.");
+  else toast("Enregistrement échoué. Réessaie dans un instant.");
+}
+
+/* ============ render loop ============ */
+let raf=0,pending=false;
+const editingInMain=()=>{const a=document.activeElement;return a&&$("#main").contains(a)&&/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)};
+function schedule(){if(raf)return;raf=requestAnimationFrame(()=>{raf=0;renderChrome();if(editingInMain()){pending=true;return}renderMain()})}
+document.addEventListener("focusout",()=>{if(pending)setTimeout(()=>{if(pending&&!editingInMain())renderMain()},350)});
+function renderAll(){renderChrome();renderMain()}
+
+const TABS=[["today","Aujourd'hui"],["copilot","Copilote"],["capture","Capture"],["network","Réseau"],["prospects","Prospects"],["tasks","Tâches"],["exam","Examen"],["sources","Sources"],["tests","Banc d'essai"],["settings","Réglages"]];
+function renderChrome(){
+  const st=Number(S.profile.stage)||0;
+  $("#stage-chip").textContent=`STAGE ${st} · ${STAGES[st][0]}`;
+  const counts={network:vals("contacts").length,prospects:vals("prospects").filter(p=>p.stage!=="DROPPED").length,tasks:vals("tasks").filter(t=>!t.done).length};
+  $("#tabs").innerHTML=TABS.map(([k,l])=>`<button class="tab" role="tab" aria-selected="${S.ui.tab===k}" data-act="tab" data-tab="${k}">${l}${counts[k]?`<span class="n">${counts[k]}</span>`:""}</button>`).join("");
+  let b="";
+  if(S.mode==="local")b="Enregistrement dans ce navigateur uniquement. Ouvre la page depuis claude.ai pour un stockage privé et synchronisé.";
+  if(S.mode==="memory")b="Rien n'est enregistré dans cette vue : les données disparaîtront à la fermeture.";
+  $("#banner").innerHTML=b?`<div class="banner"><p>${b}</p></div>`:"";
+}
+function renderMain(){
+  const v={today:vToday,copilot:vCopilot,capture:vCapture,network:vNetwork,prospects:vProspects,tasks:vTasks,exam:vExam,sources:vSources,tests:vTests,settings:vSettings}[S.ui.tab]||vToday;
+  pending=false;
+  $("#main").innerHTML=v();
+  if(S.ui.tab==="exam")tickTimer();
+}
+function toast(msg){const t=$("#toast");t.textContent=msg;t.hidden=false;clearTimeout(toast._t);toast._t=setTimeout(()=>{t.hidden=true},4200)}
+function aiNote(){
+  if(S.ai==="on")return"";
+  if(S.ai==="pending")return`<p class="muted small">Connexion à Claude…</p>`;
+  return`<p class="small muted">Les fonctions IA s'activent quand la page est ouverte dans claude.ai et que tu autorises l'accès à Claude. Le reste de l'outil fonctionne sans.</p>`;
+}
+function aiError(e){
+  const c=e&&e.code;
+  if(["not_granted","sampling_disabled","not_declared","capability_disabled","capability_removed"].includes(c)){S.ai="off";return"Claude n'est pas accessible depuis cette page pour cette visite."}
+  return({cancelled:"",rate_limited:"Trop de requêtes ou limite d'usage atteinte. Réessaie plus tard.",session_expired:"Session expirée : reconnecte-toi à claude.ai.",
+    prompt_too_large:"Contexte trop long : réduis les sources incluses ou ouvre un nouveau fil.",refused:"Claude a refusé cette demande. Reformule-la.",
+    empty_completion:"Réponse vide. Simplifie la demande.",invalid_json:"La réponse n'était pas exploitable. Relance."})[c]??"Interruption du service. Relance manuellement.";
+}
+
+/* ============ context builders ============ */
+function contextBlock(){
+  const p=S.profile,st=Number(p.stage)||0;
+  return `CONTEXTE AU ${localISO()} : Stage ${st} (${STAGES[st][0]}). Joueurs représentés : ${p.represented}. Licence : ${p.licence}. Positionnement : ${p.positioning}. Disponibilité : ${p.hours} h/semaine. Langue de réponse : ${p.lang}.`;
+}
+function sourcesBlock(budget=150000){
+  const src=vals("sources").filter(s=>s.include!==false&&s.text);
+  if(!src.length)return"\n\nSOURCES : aucune source fournie. Toute règle citée doit donc être marquée UNRESOLVED / VERIFY.";
+  const per=Math.floor(budget/src.length);
+  return "\n\nSOURCES FOURNIES (seuls textes citables comme RULE CONFIRMED) :\n"+src.map(s=>{
+    const t=s.text.length>per?s.text.slice(0,per)+"\n[…extrait tronqué pour tenir dans le contexte]":s.text;
+    return `=== ${s.title} — ${s.issuer||"émetteur non précisé"} — version du ${s.versionDate||"date inconnue"} ===\n${t}`;}).join("\n\n");
+}
+function slimRecord(col,r){
+  if(!r)return null;const o=cl(r);delete o.updatedAt;delete o.createdAt;delete o.example;
+  if(col==="contacts"&&o.journal)o.journal=o.journal.slice(-8);
+  return o;
+}
+function buildRules(mode,attach){
+  const M=MODES[mode]||MODES.libre;
+  let t=SYSTEM_PROMPT+"\n\n"+contextBlock()+`\n\nMODE ACTIF : ${M.label}. ${M.instr}`;
+  if(attach){const [col,id]=attach.split(":");const r=S.data[col]?.[id];if(r)t+=`\n\nFICHE JOINTE (${col==="contacts"?"contact":"prospect"}, USER-PROVIDED, non vérifiée) :\n`+JSON.stringify(slimRecord(col,r));}
+  if(M.sources)t+=sourcesBlock();
+  return t+"\n\nRéponds maintenant au message suivant.";
+}
+function compactSnapshot(){
+  const t=localISO();
+  return JSON.stringify({
+    date:t,
+    taches_ouvertes:vals("tasks").filter(x=>!x.done).slice(0,40).map(x=>({titre:x.title,echeance:x.due||null})),
+    contacts:vals("contacts").slice(0,60).map(c=>({nom:c.name,role:c.role,org:c.org,derniere_interaction:c.lastInteraction||null,prochaine_action:c.nextAction||null,date:c.nextDate||null})),
+    prospects:vals("prospects").filter(p=>p.stage!=="DROPPED").slice(0,40).map(p=>({nom:p.name,etape:p.stage,age:p.ageStatus,prochaine_action:p.nextAction||null,date:p.nextDate||null})),
+    examen:quizStats()
+  });
+}
+function quizStats(){
+  const r=vals("quiz").sort((a,b)=>b.ts-a.ts);const last=r.slice(0,20);
+  if(!last.length)return{total:0};
+  const ok=last.filter(x=>x.correct).length;const sec=Math.round(last.reduce((a,x)=>a+(x.seconds||0),0)/last.length);
+  return{total:r.length,last:last.length,pct:Math.round(ok*100/last.length),avgSec:sec};
+}
+
+/* ============ views ============ */
+function vToday(){
+  const t=localISO(),st=Number(S.profile.stage)||0;
+  const tasks=vals("tasks"),contacts=vals("contacts"),prospects=vals("prospects");
+  const due=[];
+  tasks.filter(x=>!x.done&&x.due&&x.due<=t).forEach(x=>due.push({kind:"Tâche",title:x.title,date:x.due,act:`data-act="tab" data-tab="tasks"`}));
+  contacts.filter(c=>c.nextDate&&c.nextDate<=t).forEach(c=>due.push({kind:"Réseau",title:`${c.nextAction||"Prochaine action"} — ${c.name}`,date:c.nextDate,act:`data-act="edit" data-col="contacts" data-id="${c.id}"`}));
+  prospects.filter(p=>p.nextDate&&p.nextDate<=t&&!["SIGNED","DROPPED"].includes(p.stage)).forEach(p=>due.push({kind:"Prospect",title:`${p.nextAction||"Prochaine action"} — ${p.name}`,date:p.nextDate,act:`data-act="edit" data-col="prospects" data-id="${p.id}"`}));
+  due.sort((a,b)=>a.date.localeCompare(b.date));
+  const cool=Number(S.profile.coolDays)||45;
+  const cold=contacts.filter(c=>!c.lastInteraction||daysBetween(c.lastInteraction,t)>cool).sort((a,b)=>(a.lastInteraction||"").localeCompare(b.lastInteraction||"")).slice(0,6);
+  const age=prospects.filter(p=>!["DROPPED"].includes(p.stage)&&p.ageStatus!=="majeur");
+  const qs=quizStats();
+  const emptyAll=!tasks.length&&!contacts.length&&!prospects.length&&!vals("sources").length;
+  const ladder=STAGES.map((s,i)=>`<div class="rung ${i<st?"done":""} ${i===st?"on":""}"><b>${i}</b><span>${s[0]}</span></div>`).join("");
+  const brief=S.ui.brief.text||(S.profile.lastBrief&&S.profile.lastBrief.date===t?S.profile.lastBrief.text:"");
+  return `
+  <section class="panel">
+    <div class="panel-h"><h2>Où j'en suis</h2><span class="eyebrow">${fmtDate(t)}</span></div>
+    <div class="ladder" aria-label="Progression">${ladder}</div>
+    <p style="margin:0"><strong>Stage ${st} · ${STAGES[st][0]}.</strong> ${STAGES[st][1]}</p>
+    <div class="stats"><span><b>${contacts.length}</b> contacts</span><span><b>${prospects.filter(p=>p.stage!=="DROPPED").length}</b> prospects</span><span><b>${tasks.filter(x=>!x.done).length}</b> tâches ouvertes</span><span>examen : ${qs.total?`<b>${qs.pct} %</b> sur ${qs.last} dernières · ${qs.avgSec} s/question`:"aucune question faite"}</span></div>
+  </section>
+  ${emptyAll?`<section class="empty"><h3>Commence ici</h3><ol>
+    <li>Colle le texte officiel du règlement en vigueur dans <strong>Sources</strong>, puis entraîne-toi dans <strong>Examen</strong>.</li>
+    <li>Après chaque échange, dicte ou tape une note dans <strong>Capture</strong> : contacts, tâches et faits sont extraits pour toi.</li>
+    <li>Pose tes questions métier au <strong>Copilote</strong>, et vérifie son comportement dans le <strong>Banc d'essai</strong>.</li></ol>
+    <div class="row"><button class="btn" data-act="examples-load">Charger des exemples</button><button class="btn primary" data-act="tab" data-tab="sources">Ajouter une source</button></div></section>`:""}
+  <div class="grid2">
+    <section class="panel">
+      <div class="panel-h"><h2>À traiter</h2><span class="eyebrow">${due.length} élément${due.length>1?"s":""}</span></div>
+      ${due.length?`<div class="list">${due.map(d=>`<div class="item click" ${d.act}><span class="eyebrow">${d.kind}</span><div class="t">${esc(d.title)}</div>${dueLabel(d.date)}</div>`).join("")}</div>`:`<p class="muted small" style="margin:0">Rien d'échu aujourd'hui.</p>`}
+    </section>
+    <section class="panel">
+      <div class="panel-h"><h2>Brief du jour</h2>${S.ai==="on"?`<button class="btn sm" data-act="brief" ${S.ui.brief.busy?"disabled":""}>${S.ui.brief.busy?"En cours…":brief?"Regénérer":"Générer"}</button>`:""}</div>
+      ${aiNote()}
+      ${S.ui.brief.busy&&!S.ui.brief.text?`<p class="thinking">Réflexion…</p>`:brief?`<div class="md" id="brief-out">${md(brief)}</div>`:S.ai==="on"?`<p class="muted small" style="margin:0">Trois lignes et une action, tirées uniquement de tes tâches, contacts et prospects.</p>`:""}
+    </section>
+  </div>
+  <div class="grid2">
+    <section class="panel">
+      <div class="panel-h"><h2>Conformité</h2><span class="eyebrow">prospects</span></div>
+      ${age.length?`<div class="list">${age.map(p=>`<div class="item click" data-act="edit" data-col="prospects" data-id="${p.id}"><span class="${p.ageStatus==="mineur"?"card-r":"card-y"}"></span><div><div class="t">${esc(p.name)}</div><div class="m">${p.ageStatus==="mineur"?"Mineur : mode juridique obligatoire avant toute approche.":"Âge inconnu : à vérifier avant toute approche."}</div></div><span></span></div>`).join("")}</div>`:`<p class="muted small" style="margin:0">Aucun prospect mineur ou d'âge inconnu.</p>`}
+    </section>
+    <section class="panel">
+      <div class="panel-h"><h2>Relations à réactiver</h2><span class="eyebrow">&gt; ${cool} jours</span></div>
+      ${cold.length?`<div class="list">${cold.map(c=>`<div class="item click two" data-act="edit" data-col="contacts" data-id="${c.id}"><div><div class="t">${esc(c.name)}</div><div class="m">${esc([c.role,c.org].filter(Boolean).join(" · "))}</div></div>${agoLabel(c.lastInteraction)}</div>`).join("")}</div>`:`<p class="muted small" style="margin:0">Aucune relation inactive.</p>`}
+    </section>
+  </div>`;
+}
+
+function vCopilot(){
+  const threads=vals("threads").sort((a,b)=>b.updatedAt-a.updatedAt);
+  const th=S.ui.threadId?S.data.threads[S.ui.threadId]:null;
+  const mode=th?th.mode:S.ui.mode;const attach=th?(th.attach||""):S.ui.attach;
+  const opts=[...vals("prospects").map(p=>[`prospects:${p.id}`,"Prospect — "+p.name]),...vals("contacts").map(c=>[`contacts:${c.id}`,"Contact — "+c.name])];
+  const nSrc=vals("sources").filter(s=>s.include!==false&&s.text).length;
+  const msgs=th?th.messages:[];
+  return `<section class="copilot">
+    <aside class="threads" aria-label="Fils">
+      <button class="btn primary" data-act="new-thread">Nouveau fil</button>
+      ${threads.map(t=>`<button class="thread" aria-current="${t.id===S.ui.threadId}" data-act="open-thread" data-id="${t.id}"><span class="tm">${esc(MODES[t.mode]?.label||"Libre")} · ${fmtDate(localISO(new Date(t.updatedAt)))}</span><span class="tt">${esc(t.title)}</span></button>`).join("")}
+    </aside>
+    <div class="panel" style="padding:14px">
+      <div class="modes" role="group" aria-label="Mode">${Object.entries(MODES).map(([k,m])=>`<button class="chip" aria-pressed="${k===mode}" data-act="mode" data-mode="${k}">${m.label}</button>`).join("")}</div>
+      <div class="row small">
+        <label class="f" style="flex:1 1 240px"><span>Fiche jointe</span><select id="cp-attach" data-change="attach"><option value="">Aucune</option>${opts.map(([v,l])=>`<option value="${v}"${sel(v,attach)}>${esc(l)}</option>`).join("")}</select></label>
+        <label class="check" style="align-self:end;padding-bottom:8px"><input type="checkbox" id="cp-deep" data-bind="deep" ${S.ui.deep?"checked":""}> Analyse approfondie</label>
+        ${MODES[mode].sources?`<span class="pill ${nSrc?"ok":"late"}" style="align-self:end;margin-bottom:9px">${nSrc} source${nSrc>1?"s":""} incluse${nSrc>1?"s":""}</span>`:""}
+      </div>
+      ${aiNote()}
+      <div class="msgs" id="msgs">
+        ${!msgs.length&&!S.ui.busy?`<div class="starters"><span class="eyebrow">Pour démarrer · ${esc(MODES[mode].label)}</span>${(STARTERS[mode]||[]).map((s,i)=>`<button class="starter" data-act="starter" data-i="${i}">${esc(s)}</button>`).join("")}</div>`:""}
+        ${msgs.map((m,i)=>m.role==="user"?`<div class="msg-u">${esc(m.content)}</div>`:`<div class="msg-a"><div class="md">${md(m.content)}</div><div class="acts"><button class="btn ghost sm" data-act="copy-msg" data-i="${i}">Copier</button><button class="btn ghost sm" data-act="nba-task" data-i="${i}">Action → tâche</button></div></div>`).join("")}
+        ${S.ui.busy?`<div class="msg-a"><div class="md" id="stream">${S.ui.streamText?md(S.ui.streamText):'<p class="thinking">Réflexion…</p>'}</div></div>`:""}
+      </div>
+      <div class="composer">
+        <textarea id="cp-in" data-bind="draft.copilot" rows="3" placeholder="Décris la situation, colle un message, pose ta question…">${esc(S.ui.draft.copilot)}</textarea>
+        <div class="row"><button class="btn primary" data-act="send" ${S.ui.busy||S.ai!=="on"?"disabled":""}>Envoyer</button>${S.ui.busy?`<button class="btn" data-act="stop">Arrêter</button>`:""}<span class="spacer"></span><span class="eyebrow">Ctrl / ⌘ + Entrée</span>
+        ${th?(S.ui.confirm===`thread:${th.id}`?`<button class="btn danger solid sm" data-act="del" data-col="threads" data-id="${th.id}">Confirmer la suppression</button>`:`<button class="btn ghost sm" data-act="askdel" data-key="thread:${th.id}">Supprimer le fil</button>`):""}</div>
+      </div>
+    </div>
+  </section>`;
+}
+
+function vCapture(){
+  const c=S.ui.capture,r=c.result;
+  const ck=(path,on)=>`<input type="checkbox" data-bind="${path}" ${on!==false?"checked":""}>`;
+  let review="";
+  if(r){
+    const sec=(title,arr,fn)=>arr&&arr.length?`<div><div class="eyebrow" style="margin-bottom:4px">${title}</div><div class="list">${arr.map(fn).join("")}</div></div>`:"";
+    review=`<section class="panel"><div class="panel-h"><h2>À enregistrer</h2><span class="eyebrow">décoche ce qui est faux</span></div>
+      ${r.summary?`<p style="margin:0">${esc(r.summary)}</p>`:""}
+      ${r.sensitive_flag?`<p class="small" style="margin:0"><span class="card-y" style="margin-right:6px;vertical-align:-2px"></span>La note contient une information sensible (santé ou autre). Elle n'a pas été extraite.</p>`:""}
+      ${sec("Contacts",r.contacts,(x,i)=>`<label class="item check">${ck(`capture.result.contacts.${i}._on`,x._on)}<div><div class="t">${esc(x.name)}</div><div class="m">${esc([x.role,x.org].filter(Boolean).join(" · "))} ${x.match_id&&S.data.contacts[x.match_id]?"· mise à jour d'une fiche existante":"· nouvelle fiche"}</div></div><span></span></label>`)}
+      ${sec("Prospects",r.prospects,(x,i)=>`<label class="item check">${ck(`capture.result.prospects.${i}._on`,x._on)}<div><div class="t">${esc(x.name)}</div><div class="m">${esc([x.position,x.club].filter(Boolean).join(" · "))} · âge : ${esc(x.age_info||"inconnu")}</div></div>${x.age_info!=="majeur"?`<span class="${x.age_info==="mineur"?"card-r":"card-y"}"></span>`:"<span></span>"}</label>`)}
+      ${sec("Échanges au journal",r.interactions,(x,i)=>`<label class="item check">${ck(`capture.result.interactions.${i}._on`,x._on)}<div><div class="t">${esc(x.contact_name)}</div><div class="m">${esc(x.summary)}</div></div><span class="pill">${fmtDate(x.date)}</span></label>`)}
+      ${sec("Faits",r.facts,(x,i)=>`<label class="item check">${ck(`capture.result.facts.${i}._on`,x._on)}<div><div class="t">${esc(x.text)}</div><div class="m">${esc(x.about)}</div></div>${stChip(x.status||"USER-PROVIDED")}</label>`)}
+      ${sec("Tâches",r.tasks,(x,i)=>`<label class="item check">${ck(`capture.result.tasks.${i}._on`,x._on)}<div class="t">${esc(x.title)}</div>${x.due?dueLabel(x.due):"<span></span>"}</label>`)}
+      ${r.open_questions&&r.open_questions.length?`<div><div class="eyebrow">Questions ouvertes</div><ul style="margin:4px 0 0;padding-left:20px">${r.open_questions.map(q=>`<li>${esc(q)}</li>`).join("")}</ul></div>`:""}
+      <div class="row"><button class="btn primary" data-act="capture-apply">Enregistrer la sélection</button><button class="btn ghost" data-act="capture-clear">Annuler</button></div></section>`;
+  }
+  return `<section class="panel">
+    <div class="panel-h"><h2>Capture</h2><span class="eyebrow">note brute → fiches</span></div>
+    <p class="muted small" style="margin:0">Après un appel ou un rendez-vous, écris ou dicte (micro du clavier) ce qui s'est passé. Le copilote propose contacts, échanges, faits avec leur statut et tâches datées. Rien n'est enregistré sans ta validation.</p>
+    ${aiNote()}
+    <textarea id="cap-in" data-bind="draft.capture" rows="6" placeholder="Ex. : Appel avec le responsable recrutement de [club] : il dit chercher un 6 gaucher U21 pour janvier, budget non communiqué. Rappeler mardi. Il connaît bien l'entraîneur des U19 de [autre club].">${esc(S.ui.draft.capture)}</textarea>
+    <div class="row"><button class="btn primary" data-act="capture-run" ${c.busy||S.ai!=="on"?"disabled":""}>${c.busy?"Structuration…":"Structurer"}</button><span class="eyebrow">Ctrl / ⌘ + Entrée</span></div>
+  </section>${review}`;
+}
+
+function contactEditor(o,isNew){
+  const b=k=>`data-bind="edit.obj.${k}"`;
+  const j=(o.journal||[]).slice().map((e,i)=>({...e,i})).sort((a,b)=>(b.date||"").localeCompare(a.date||""));
+  return `<section class="panel" id="editor"><div class="panel-h"><h2>${isNew?"Nouveau contact":esc(o.name||"Contact")}</h2>${o.example?`<span class="pill now">exemple</span>`:""}</div>
+  <div class="fgrid">
+    <label class="f"><span>Nom</span><input type="text" id="c-name" ${b("name")} value="${esc(o.name)}"></label>
+    <label class="f"><span>Rôle</span><select id="c-role" ${b("role")}><option value="">—</option>${ROLES.map(r=>`<option${sel(r,o.role)}>${r}</option>`).join("")}</select></label>
+    <label class="f"><span>Organisation</span><input type="text" id="c-org" ${b("org")} value="${esc(o.org)}"></label>
+    <label class="f"><span>Canal préféré</span><input type="text" id="c-ch" ${b("channel")} value="${esc(o.channel)}" placeholder="WhatsApp, e-mail, LinkedIn…"></label>
+    <label class="f wide"><span>Pourquoi cette personne compte</span><textarea id="c-why" rows="2" ${b("why")}>${esc(o.why)}</textarea></label>
+    <label class="f wide"><span>Ce que je peux lui apporter</span><textarea id="c-val" rows="2" ${b("value")}>${esc(o.value)}</textarea></label>
+    <label class="f"><span>Dernier échange</span><input type="date" id="c-last" ${b("lastInteraction")} value="${esc(o.lastInteraction)}"></label>
+    <label class="f"><span>Prochaine action</span><input type="text" id="c-next" ${b("nextAction")} value="${esc(o.nextAction)}"></label>
+    <label class="f"><span>Échéance</span><input type="date" id="c-nextd" ${b("nextDate")} value="${esc(o.nextDate)}"></label>
+    <label class="f wide"><span>Notes</span><textarea id="c-notes" rows="2" ${b("notes")}>${esc(o.notes)}</textarea></label>
+  </div>
+  <div><div class="eyebrow" style="margin-bottom:4px">Journal des échanges</div>
+    ${j.length?`<div class="list">${j.map(e=>`<div class="item"><span class="pill">${fmtDate(e.date)}</span><div class="t" style="font-weight:400">${esc(e.summary)}</div><button class="btn ghost sm" data-act="rm-journal" data-i="${e.i}" aria-label="Retirer">✕</button></div>`).join("")}</div>`:`<p class="muted small" style="margin:0">Aucun échange noté.</p>`}
+    <div class="row" style="margin-top:8px"><input type="date" id="j-date" data-bind="journal.date" value="${esc(S.ui.journal.date||localISO())}" style="width:auto"><input type="text" id="j-sum" data-bind="journal.summary" value="${esc(S.ui.journal.summary)}" placeholder="Ce qui a été dit, promis, appris" style="flex:1 1 220px"><button class="btn sm" data-act="add-journal">Ajouter</button></div>
+  </div>
+  <div class="row"><button class="btn primary" data-act="save-edit">Enregistrer</button><button class="btn" data-act="cancel-edit">Fermer</button>
+    ${!isNew?`<button class="btn" data-act="copilot-from" data-col="contacts" data-id="${o.id}" data-mode="reseau">Préparer un échange</button>`:""}
+    <span class="spacer"></span>${!isNew?delBtn("contacts",o.id):""}</div>
+  <p class="small muted" style="margin:0">Ne note que ce qui sert la relation. Pas de données de santé ni d'informations privées inutiles.</p></section>`;
+}
+function delBtn(col,id){const k=`${col}:${id}`;return S.ui.confirm===k?`<button class="btn danger solid sm" data-act="del" data-col="${col}" data-id="${id}">Confirmer la suppression</button>`:`<button class="btn danger sm" data-act="askdel" data-key="${k}">Supprimer</button>`}
+
+function vNetwork(){
+  const e=S.ui.edit&&S.ui.edit.col==="contacts"?S.ui.edit:null;
+  const q=S.ui.search.toLowerCase(),rf=S.ui.roleFilter;
+  const list=vals("contacts").filter(c=>(!rf||c.role===rf)&&(!q||[c.name,c.org,c.role,c.notes].join(" ").toLowerCase().includes(q))).sort((a,b)=>(a.nextDate||"9999").localeCompare(b.nextDate||"9999")||a.name.localeCompare(b.name));
+  return `${e?contactEditor(e.obj,e.isNew):""}
+  <section class="panel"><div class="panel-h"><h2>Réseau</h2><button class="btn primary sm" data-act="new" data-col="contacts">Nouveau contact</button></div>
+    <div class="row"><input type="search" id="n-search" data-bind="search" data-live="1" value="${esc(S.ui.search)}" placeholder="Rechercher" style="flex:1 1 200px"><select id="n-role" data-bind="roleFilter" data-change="rerender" style="width:auto"><option value="">Tous les rôles</option>${ROLES.map(r=>`<option${sel(r,rf)}>${r}</option>`).join("")}</select></div>
+    ${list.length?`<div class="list">${list.map(c=>`<div class="item click two" data-act="edit" data-col="contacts" data-id="${c.id}"><div style="min-width:0"><div class="t">${esc(c.name)} ${c.example?`<span class="pill now">exemple</span>`:""}</div><div class="m">${esc([c.role,c.org].filter(Boolean).join(" · "))}${c.nextAction?` — ${esc(c.nextAction)}`:""}</div></div><div class="row" style="justify-content:flex-end">${c.nextDate?dueLabel(c.nextDate):""}${agoLabel(c.lastInteraction)}</div></div>`).join("")}</div>`
+      :`<div class="empty"><h3>Aucun contact${q||rf?" pour ce filtre":""}</h3><p style="margin:0">Ajoute les personnes qui comptent : recruteurs, entraîneurs, agents licenciés, dirigeants. Pour chacune, note pourquoi elle compte et ce que tu peux lui apporter.</p></div>`}
+  </section>`;
+}
+
+function prospectEditor(o,isNew){
+  const b=k=>`data-bind="edit.obj.${k}"`;
+  const facts=o.facts||[];
+  return `<section class="panel" id="editor"><div class="panel-h"><h2>${isNew?"Nouveau prospect":esc(o.name||"Prospect")}</h2>${o.example?`<span class="pill now">exemple</span>`:""}</div>
+  ${o.ageStatus!=="majeur"?`<p class="small" style="margin:0;display:flex;gap:8px"><span class="${o.ageStatus==="mineur"?"card-r":"card-y"}"></span><span>${o.ageStatus==="mineur"?"Joueur mineur : passe par le mode juridique et les représentants légaux avant toute approche.":"Âge non vérifié : confirme-le avant toute stratégie d'approche."}</span></p>`:""}
+  <div class="fgrid">
+    <label class="f"><span>Nom</span><input type="text" id="p-name" ${b("name")} value="${esc(o.name)}"></label>
+    <label class="f"><span>Poste</span><input type="text" id="p-pos" ${b("position")} value="${esc(o.position)}"></label>
+    <label class="f"><span>Club</span><input type="text" id="p-club" ${b("club")} value="${esc(o.club)}"></label>
+    <label class="f"><span>Championnat</span><input type="text" id="p-league" ${b("league")} value="${esc(o.league)}"></label>
+    <label class="f"><span>Âge</span><select id="p-age" ${b("ageStatus")} data-change="rerender"><option value="inconnu"${sel("inconnu",o.ageStatus)}>Inconnu</option><option value="mineur"${sel("mineur",o.ageStatus)}>Mineur (moins de 18 ans)</option><option value="majeur"${sel("majeur",o.ageStatus)}>Majeur (vérifié)</option></select></label>
+    <label class="f"><span>Source de l'âge</span><input type="text" id="p-ages" ${b("ageSource")} value="${esc(o.ageSource)}" placeholder="Fiche officielle, club, joueur…"></label>
+    <label class="f"><span>Fin de contrat</span><input type="text" id="p-ce" ${b("contractEnd")} value="${esc(o.contractEnd)}" placeholder="ex. juin 2027"></label>
+    <label class="f"><span>Statut de cette info</span><select id="p-ces" ${b("contractStatus")}>${FACT_ST.map(s=>`<option${sel(s,o.contractStatus||"UNKNOWN")}>${s}</option>`).join("")}</select></label>
+    <label class="f"><span>Étape</span><select id="p-stage" ${b("stage")}>${PSTAGES.map(([k,l])=>`<option value="${k}"${sel(k,o.stage)}>${l}</option>`).join("")}</select></label>
+    <label class="f wide"><span>Pourquoi intéressant</span><textarea id="p-why" rows="2" ${b("whyInteresting")}>${esc(o.whyInteresting)}</textarea></label>
+    <label class="f"><span>Pourquoi maintenant</span><textarea id="p-now" rows="2" ${b("whyNow")}>${esc(o.whyNow)}</textarea></label>
+    <label class="f"><span>Pourquoi moi</span><textarea id="p-me" rows="2" ${b("whyMe")}>${esc(o.whyMe)}</textarea></label>
+    <label class="f"><span>Accès légitime</span><textarea id="p-acc" rows="2" ${b("access")}>${esc(o.access)}</textarea></label>
+    <label class="f"><span>Signaux d'alerte</span><textarea id="p-red" rows="2" ${b("redFlags")}>${esc(o.redFlags)}</textarea></label>
+    <label class="f"><span>Prochaine action</span><input type="text" id="p-next" ${b("nextAction")} value="${esc(o.nextAction)}"></label>
+    <label class="f"><span>Échéance</span><input type="date" id="p-nextd" ${b("nextDate")} value="${esc(o.nextDate)}"></label>
+  </div>
+  <div><div class="eyebrow" style="margin-bottom:4px">Faits et leur statut</div>
+    ${facts.length?`<div class="list">${facts.map((f,i)=>`<div class="item" style="grid-template-columns:minmax(0,1fr) auto auto"><input type="text" id="pf-t-${i}" data-bind="edit.obj.facts.${i}.text" value="${esc(f.text)}"><select id="pf-s-${i}" data-bind="edit.obj.facts.${i}.status" style="width:auto">${FACT_ST.map(s=>`<option${sel(s,f.status)}>${s}</option>`).join("")}</select><button class="btn ghost sm" data-act="rm-fact" data-i="${i}" aria-label="Retirer">✕</button></div>`).join("")}</div>`:`<p class="muted small" style="margin:0">Aucun fait noté.</p>`}
+    <button class="btn sm" style="margin-top:8px" data-act="add-fact">Ajouter un fait</button>
+  </div>
+  <div class="row"><button class="btn primary" data-act="save-edit">Enregistrer</button><button class="btn" data-act="cancel-edit">Fermer</button>
+    ${!isNew?`<button class="btn" data-act="copilot-from" data-col="prospects" data-id="${o.id}" data-mode="${o.ageStatus==="majeur"?"prospect":"juridique"}">${o.ageStatus==="majeur"?"Analyser avec le copilote":"Vérifier le cadre juridique"}</button>`:""}
+    <span class="spacer"></span>${!isNew?delBtn("prospects",o.id):""}</div>
+  <p class="small muted" style="margin:0">Données minimales : pas de santé, pas de vie privée. Tu devras informer la personne que tu conserves ces informations (RGPD).</p></section>`;
+}
+function vProspects(){
+  const e=S.ui.edit&&S.ui.edit.col==="prospects"?S.ui.edit:null;
+  const all=vals("prospects"),f=S.ui.pFilter;
+  const cnt=Object.fromEntries(PSTAGES.map(([k])=>[k,all.filter(p=>p.stage===k).length]));
+  const list=all.filter(p=>f?p.stage===f:p.stage!=="DROPPED");
+  const groups=PSTAGES.filter(([k])=>list.some(p=>p.stage===k));
+  return `${e?prospectEditor(e.obj,e.isNew):""}
+  <section class="panel"><div class="panel-h"><h2>Prospects</h2><button class="btn primary sm" data-act="new" data-col="prospects">Nouveau prospect</button></div>
+    <div class="modes"><button class="chip" aria-pressed="${!f}" data-act="pfilter" data-v="">Actifs</button>${PSTAGES.map(([k,l])=>`<button class="chip" aria-pressed="${f===k}" data-act="pfilter" data-v="${k}">${l} <span class="mono">${cnt[k]}</span></button>`).join("")}</div>
+    ${list.length?groups.map(([k,l])=>`<div><div class="eyebrow" style="margin:6px 0 4px">${l}</div><div class="list">${list.filter(p=>p.stage===k).map(p=>`<div class="item click" data-act="edit" data-col="prospects" data-id="${p.id}"><span class="${p.ageStatus==="mineur"?"card-r":p.ageStatus==="majeur"?"":"card-y"}" style="${p.ageStatus==="majeur"?"width:9px":""}"></span><div style="min-width:0"><div class="t">${esc(p.name)} ${p.example?`<span class="pill now">exemple</span>`:""}</div><div class="m">${esc([p.position,p.club,p.league].filter(Boolean).join(" · "))}${p.nextAction?` — ${esc(p.nextAction)}`:""}</div></div>${p.nextDate?dueLabel(p.nextDate):"<span></span>"}</div>`).join("")}</div></div>`).join("")
+      :`<div class="empty"><h3>Aucun prospect${f?" à cette étape":""}</h3><p style="margin:0">Cherche des situations où un agent crée de la valeur : passage académie vers pro, échéance de contrat, joueur sous-exposé, palier difficile. Note pourquoi maintenant et pourquoi toi.</p></div>`}
+  </section>`;
+}
+
+function vTasks(){
+  const all=vals("tasks");const open=all.filter(t=>!t.done).sort((a,b)=>(a.due||"9999").localeCompare(b.due||"9999"));
+  const done=all.filter(t=>t.done).sort((a,b)=>(b.doneAt||0)-(a.doneAt||0)).slice(0,20);
+  const row=t=>`<div class="item"><input type="checkbox" class="check" aria-label="Terminée" data-act="task-toggle" data-id="${t.id}" ${t.done?"checked":""} style="margin-top:5px;accent-color:var(--pitch)"><div class="t" style="${t.done?"text-decoration:line-through;color:var(--muted)":""}">${esc(t.title)} ${t.example?`<span class="pill now">exemple</span>`:""}</div><div class="row">${t.due&&!t.done?dueLabel(t.due):""}${S.ui.confirm===`tasks:${t.id}`?`<button class="btn danger solid sm" data-act="del" data-col="tasks" data-id="${t.id}">Confirmer</button>`:`<button class="btn ghost sm" data-act="askdel" data-key="tasks:${t.id}" aria-label="Supprimer">✕</button>`}</div></div>`;
+  return `<section class="panel"><div class="panel-h"><h2>Tâches</h2><span class="eyebrow">${open.length} ouverte${open.length>1?"s":""}</span></div>
+    <div class="row"><input type="text" id="t-title" data-bind="task.title" value="${esc(S.ui.task.title)}" placeholder="Action précise et faisable" style="flex:1 1 240px"><input type="date" id="t-due" data-bind="task.due" value="${esc(S.ui.task.due)}" style="width:auto"><button class="btn primary" data-act="task-add">Ajouter</button></div>
+    ${open.length?`<div class="list">${open.map(row).join("")}</div>`:`<p class="muted small" style="margin:0">Aucune tâche ouverte. Le bouton « Action → tâche » du copilote en crée une à partir de la NEXT BEST ACTION.</p>`}
+    ${done.length?`<details><summary class="small">Terminées (${done.length})</summary><div class="list" style="margin-top:6px">${done.map(row).join("")}</div></details>`:""}
+  </section>`;
+}
+
+function vExam(){
+  const src=vals("sources").filter(s=>s.text);
+  if(!S.ui.quizSrc&&src[0])S.ui.quizSrc=src[0].id;
+  const qs=quizStats();const hist=vals("quiz").sort((a,b)=>b.ts-a.ts);
+  const weak={};hist.slice(0,60).filter(h=>!h.correct&&h.reference).forEach(h=>{weak[h.reference]=(weak[h.reference]||0)+1});
+  const weakL=Object.entries(weak).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  const Q=S.ui.quiz;
+  let qhtml="";
+  if(Q&&Q.loading)qhtml=`<p class="thinking">Préparation de la question…</p>`;
+  else if(Q&&Q.q){
+    const q=Q.q,ans=Q.picked!=null;
+    qhtml=`<div class="row"><span class="eyebrow">Question · ${esc(Q.srcTitle)}</span><span class="spacer"></span><span class="timer" id="timer">${ans?fmtSec(Q.seconds):"0:00"}</span></div>
+      <p style="margin:0;font-size:16px;font-weight:500">${esc(q.question)}</p>
+      <div style="display:grid;gap:8px">${q.options.map((o,i)=>`<button class="qopt ${ans&&i===q.answer?"right":""} ${ans&&i===Q.picked&&i!==q.answer?"wrong":""}" data-act="quiz-pick" data-i="${i}" ${ans?"disabled":""}><span class="mono">${"ABCD"[i]}</span> · ${esc(o)}</button>`).join("")}</div>
+      ${ans?`<div style="display:grid;gap:8px">
+        <p style="margin:0"><strong>${Q.picked===q.answer?"Bonne réponse.":"Mauvaise réponse."}</strong> Référence : <span class="mono">${esc(q.reference)}</span></p>
+        <div class="quote">${esc(q.quote)}</div>
+        <p class="small" style="margin:0">${Q.verified?`<span class="st st-confirmed">CITATION TROUVÉE DANS LA SOURCE</span>`:`<span class="st st-verify">CITATION INTROUVABLE</span> Vérifie cette question dans le texte avant de t'y fier.`}</p>
+        <p style="margin:0">${esc(q.explanation)}</p>${q.trap?`<p class="small muted" style="margin:0"><strong>Piège classique :</strong> ${esc(q.trap)}</p>`:""}
+        <div class="row"><button class="btn primary" data-act="quiz-new">Question suivante</button><button class="btn" data-act="copilot-quiz">Approfondir avec le copilote</button></div></div>`:""}`;
+  }
+  return `<div class="grid2">
+  <section class="panel"><div class="panel-h"><h2>Examen · livre ouvert</h2><span class="eyebrow">QCM chronométré</span></div>
+    <p class="muted small" style="margin:0">Questions générées uniquement à partir de tes sources. Chaque réponse donne l'article et une citation, vérifiée automatiquement dans le texte.</p>
+    ${aiNote()}
+    ${src.length?`<div class="fgrid"><label class="f"><span>Source</span><select id="q-src" data-bind="quizSrc">${src.map(s=>`<option value="${s.id}"${sel(s.id,S.ui.quizSrc)}>${esc(s.title)}</option>`).join("")}</select></label>
+      <label class="f"><span>Thème (facultatif)</span><input type="text" id="q-theme" data-bind="quizTheme" value="${esc(S.ui.quizTheme)}" placeholder="conflits d'intérêts, mineurs, rémunération…"></label></div>
+      ${!Q||(!Q.q&&!Q.loading)?`<div class="row"><button class="btn primary" data-act="quiz-new" ${S.ai!=="on"?"disabled":""}>Nouvelle question</button></div>`:""}
+      ${qhtml}`
+    :`<div class="empty"><h3>Ajoute d'abord une source</h3><p style="margin:0">Colle le texte officiel du règlement, dans sa version en vigueur, depuis le site de la FIFA ou de ta fédération. On s'entraîne à retrouver l'article, pas à réciter.</p><div class="row"><button class="btn primary" data-act="tab" data-tab="sources">Ajouter une source</button></div></div>`}
+  </section>
+  <section class="panel"><div class="panel-h"><h2>Progression</h2></div>
+    <div class="stats"><span><b>${qs.total||0}</b> questions</span>${qs.total?`<span><b>${qs.pct} %</b> sur ${qs.last} dernières</span><span><b>${qs.avgSec} s</b> en moyenne</span>`:""}</div>
+    ${weakL.length?`<div><div class="eyebrow" style="margin-bottom:4px">Articles à retravailler</div><div class="list">${weakL.map(([r,n])=>`<div class="item two"><span class="mono small">${esc(r)}</span><span class="pill late">${n} erreur${n>1?"s":""}</span></div>`).join("")}</div></div>`:""}
+    ${hist.length?`<div><div class="eyebrow" style="margin-bottom:4px">Dernières questions</div><div class="list">${hist.slice(0,8).map(h=>`<div class="item two"><div style="min-width:0"><div class="t small" style="font-weight:400">${esc((h.question||"").slice(0,110))}</div><div class="m mono">${esc(h.reference||"")} · ${h.seconds||0} s</div></div><span class="pill ${h.correct?"ok":"late"}">${h.correct?"juste":"faux"}</span></div>`).join("")}</div></div>`:`<p class="muted small" style="margin:0">Tes résultats apparaîtront ici.</p>`}
+  </section></div>`;
+}
+const fmtSec=s=>`${Math.floor(s/60)}:${String(s%60).padStart(2,"0")}`;
+let timerInt=0;
+function tickTimer(){clearInterval(timerInt);const Q=S.ui.quiz;if(!Q||!Q.q||Q.picked!=null)return;
+  const f=()=>{const el=$("#timer");if(!el){clearInterval(timerInt);return}el.textContent=fmtSec(Math.floor((Date.now()-Q.startedAt)/1000))};f();timerInt=setInterval(f,1000)}
+
+function vSources(){
+  const e=S.ui.edit&&S.ui.edit.col==="sources"?S.ui.edit:null;
+  const list=vals("sources").sort((a,b)=>(a.title||"").localeCompare(b.title||""));
+  let ed="";
+  if(e){const o=e.obj,b=k=>`data-bind="edit.obj.${k}"`;const n=(o.text||"").length;
+    ed=`<section class="panel" id="editor"><div class="panel-h"><h2>${e.isNew?"Nouvelle source":esc(o.title)}</h2><span class="eyebrow mono">${n.toLocaleString("fr-FR")} caractères</span></div>
+    <div class="fgrid">
+      <label class="f wide"><span>Titre</span><input type="text" id="s-title" ${b("title")} value="${esc(o.title)}" placeholder="Règlement FIFA sur les agents de football"></label>
+      <label class="f"><span>Émetteur</span><input type="text" id="s-iss" ${b("issuer")} value="${esc(o.issuer)}" placeholder="FIFA, FFF, Code du sport…"></label>
+      <label class="f"><span>Date de la version</span><input type="date" id="s-ver" ${b("versionDate")} value="${esc(o.versionDate)}"></label>
+      <label class="f wide"><span>Adresse officielle</span><input type="text" id="s-url" ${b("url")} value="${esc(o.url)}" placeholder="https://…"></label>
+      <label class="f wide"><span>Texte officiel collé</span><textarea id="s-text" rows="12" ${b("text")}>${esc(o.text)}</textarea></label>
+      <label class="check wide"><input type="checkbox" id="s-inc" ${b("include")} ${o.include!==false?"checked":""}> Utiliser dans les modes Examen et Juridique</label>
+    </div>
+    <p class="small muted" style="margin:0">Le copilote ne cite un article que s'il le trouve ici. Vérifie la version en vigueur sur le site officiel avant de coller. Un texte long est découpé automatiquement en parties.</p>
+    <div class="row"><button class="btn primary" data-act="save-source">Enregistrer</button><button class="btn" data-act="cancel-edit">Fermer</button><span class="spacer"></span>${!e.isNew?delBtn("sources",o.id):""}</div></section>`;}
+  return `${ed}<section class="panel"><div class="panel-h"><h2>Sources</h2><button class="btn primary sm" data-act="new" data-col="sources">Ajouter une source</button></div>
+    ${list.length?`<div class="list">${list.map(s=>`<div class="item click" data-act="edit" data-col="sources" data-id="${s.id}"><span class="pill ${s.include!==false?"ok":""}">${s.include!==false?"utilisée":"ignorée"}</span><div style="min-width:0"><div class="t">${esc(s.title)}</div><div class="m">${esc(s.issuer||"Émetteur non précisé")} · version ${s.versionDate?fmtDate(s.versionDate):"non datée"} · <span class="mono">${(s.text||"").length.toLocaleString("fr-FR")}</span> car.</div></div>${!s.versionDate?`<span class="st st-verify">NON DATÉE</span>`:"<span></span>"}</div>`).join("")}</div>`
+    :`<div class="empty"><h3>Aucune source</h3><p style="margin:0">Sans source, le copilote marque toute règle UNRESOLVED / VERIFY. Commence par le règlement FIFA sur les agents dans sa version en vigueur, puis les textes nationaux qui te concernent.</p></div>`}
+  </section>`;
+}
+
+function vTests(){
+  const ev=vals("evals");
+  return `<section class="panel"><div class="panel-h"><h2>Banc d'essai</h2><span class="eyebrow">le prompt tient-il ?</span></div>
+    <p class="muted small" style="margin:0">Trois cas pièges envoyés au copilote en mode Libre, avec ton contexte actuel. Coche ce qu'il a fait correctement. Si un cas échoue, corrige la section du prompt concernée avant d'élargir l'usage.</p>${aiNote()}</section>
+  ${EVALS.map(c=>{const last=ev.filter(x=>x.caseId===c.id).sort((a,b)=>b.ts-a.ts)[0];const run=S.ui.evalRun[c.id]||{};const chk=S.ui.evalChecks[c.id]||{};
+    return `<section class="panel"><div class="panel-h"><h3 style="font-size:19px;text-transform:uppercase;letter-spacing:.05em">${esc(c.title)}</h3>${last?`<span class="pill ${last.score===c.checks.length?"ok":"late"}">dernier : ${last.score}/${c.checks.length} · ${fmtDate(localISO(new Date(last.ts)))}</span>`:`<span class="pill">jamais lancé</span>`}</div>
+      <div class="quote">${esc(c.prompt)}</div>
+      <div class="row"><button class="btn primary sm" data-act="eval-run" data-id="${c.id}" ${run.busy||S.ai!=="on"?"disabled":""}>${run.busy?"En cours…":run.text?"Relancer":"Lancer"}</button>${run.busy?`<button class="btn sm" data-act="stop">Arrêter</button>`:""}</div>
+      ${run.text||run.busy?`<div class="msg-a"><div class="md" id="ev-${c.id}">${run.text?md(run.text):'<p class="thinking">Réflexion…</p>'}</div></div>`:""}
+      <div style="display:grid;gap:6px"><span class="eyebrow">Comportement attendu</span>${c.checks.map((k,i)=>`<label class="check"><input type="checkbox" id="ev-${c.id}-${i}" data-bind="evalChecks.${c.id}.${i}" ${chk[i]?"checked":""}> ${esc(k)}</label>`).join("")}</div>
+      ${run.text&&!run.busy?`<div class="row"><button class="btn sm" data-act="eval-save" data-id="${c.id}">Enregistrer le résultat</button></div>`:""}
+    </section>`}).join("")}`;
+}
+
+function vSettings(){
+  if(!S.ui.prof)S.ui.prof=cl(S.profile);
+  const p=S.ui.prof,b=k=>`data-bind="prof.${k}"`,ip=S.ui.importPreview;
+  const nEx=COLS.reduce((a,c)=>a+vals(c).filter(x=>x.example).length,0);
+  return `<section class="panel"><div class="panel-h"><h2>Contexte</h2><span class="eyebrow">injecté dans chaque requête</span></div>
+    <div class="fgrid">
+      <label class="f"><span>Stage actuel</span><select id="pr-stage" ${b("stage")}>${STAGES.map((s,i)=>`<option value="${i}"${sel(i,p.stage)}>${i} · ${s[0]}</option>`).join("")}</select></label>
+      <label class="f"><span>Joueurs représentés</span><input type="number" min="0" id="pr-rep" ${b("represented")} value="${esc(p.represented)}"></label>
+      <label class="f"><span>Licence</span><input type="text" id="pr-lic" ${b("licence")} value="${esc(p.licence)}"></label>
+      <label class="f"><span>Heures par semaine</span><input type="text" id="pr-h" ${b("hours")} value="${esc(p.hours)}"></label>
+      <label class="f wide"><span>Positionnement</span><input type="text" id="pr-pos" ${b("positioning")} value="${esc(p.positioning)}"></label>
+      <label class="f"><span>Langue de réponse</span><input type="text" id="pr-lang" ${b("lang")} value="${esc(p.lang)}"></label>
+      <label class="f"><span>Relation inactive après (jours)</span><input type="number" min="7" id="pr-cool" ${b("coolDays")} value="${esc(p.coolDays)}"></label>
+    </div>
+    <div class="row"><button class="btn primary" data-act="save-profile">Enregistrer le contexte</button></div>
+    <pre class="prompt" aria-label="Aperçu du contexte">${esc(contextBlockFrom(p))}</pre>
+  </section>
+  <section class="panel"><div class="panel-h"><h2>Prompt v2.1</h2><button class="btn sm" data-act="copy-prompt">Copier le prompt complet</button></div>
+    <p class="muted small" style="margin:0">Le même texte sert dans un Projet claude.ai si tu veux l'utiliser hors de cette page.</p>
+    <details><summary class="small">Afficher</summary><pre class="prompt" style="margin-top:8px">${esc(SYSTEM_PROMPT)}</pre></details>
+  </section>
+  <section class="panel"><div class="panel-h"><h2>Données</h2><span class="eyebrow">${S.mode==="db"?"stockage claude.ai · privé":S.mode==="local"?"ce navigateur":"non enregistré"}</span></div>
+    <div class="row"><button class="btn" data-act="export">Exporter (JSON)</button><label class="btn" for="imp-file">Importer un export</label><input type="file" id="imp-file" accept=".json,application/json" data-change="import" hidden>
+      ${nEx?`<button class="btn" data-act="examples-clear">Retirer les exemples (${nEx})</button>`:`<button class="btn" data-act="examples-load">Charger des exemples</button>`}</div>
+    ${ip?`<div class="quote">Import prêt : ${COLS.map(c=>`${Object.keys(ip.data?.[c]||{}).length} ${c}`).join(" · ")}. Les fiches de même identifiant seront remplacées.<div class="row" style="margin-top:6px"><button class="btn primary sm" data-act="import-apply">Importer</button><button class="btn sm" data-act="import-cancel">Annuler</button></div></div>`:""}
+    <div class="row">${S.ui.confirm==="wipe"?`<button class="btn danger solid" data-act="wipe">Confirmer : tout effacer</button><button class="btn" data-act="askdel" data-key="">Annuler</button>`:`<button class="btn danger" data-act="askdel" data-key="wipe">Tout effacer</button>`}</div>
+  </section>`;
+}
+function contextBlockFrom(p){const keep=S.profile;S.profile={...keep,...p};const t=contextBlock();S.profile=keep;return t}
+
+/* ============ AI actions ============ */
+function fitThread(th){
+  th.messages=th.messages.slice(-40).map(m=>({...m,content:String(m.content).slice(0,30000)}));
+  while(JSON.stringify(th).length>180000&&th.messages.length>2)th.messages.shift();
+  return th;
+}
+async function send(){
+  const text=(S.ui.draft.copilot||"").trim();if(!text||S.ui.busy)return;
+  if(!S.sample||S.ai!=="on"){toast("Claude n'est pas disponible dans cette vue.");return}
+  let th=S.ui.threadId&&S.data.threads[S.ui.threadId]?cl(S.data.threads[S.ui.threadId]):{id:uid(),mode:S.ui.mode,attach:S.ui.attach||"",title:text.slice(0,80),messages:[]};
+  S.ui.threadId=th.id;
+  th.messages.push({role:"user",content:text,ts:Date.now()});
+  S.ui.draft.copilot="";S.ui.busy=true;S.ui.streamText="";
+  Store.put("threads",fitThread(cl(th)));renderAll();
+  const el=$("#stream");if(el)el.scrollIntoView({block:"nearest"});
+  const input=[{role:"user",content:buildRules(th.mode,th.attach)},...th.messages.slice(-24).map(m=>({role:m.role,content:m.content}))];
+  ctl=new AbortController();
+  try{
+    const r=await S.sample(input,{cache:false,signal:ctl.signal,modelTier:S.ui.deep?"complex":"default",onText:({text})=>{S.ui.streamText=text;const s=$("#stream");if(s)s.innerHTML=md(text)}});
+    th.messages.push({role:"assistant",content:r.text+(r.truncated?"\n\n_Réponse tronquée : demande une suite ou découpe la question._":""),ts:Date.now()});
+  }catch(e){
+    if(e&&e.text)th.messages.push({role:"assistant",content:e.text+"\n\n_Réponse interrompue._",ts:Date.now()});
+    const m=aiError(e);if(m)toast(m);
+  }finally{
+    S.ui.busy=false;S.ui.streamText="";ctl=null;
+    Store.put("threads",fitThread(th));renderAll();
+  }
+}
+async function runBrief(){
+  if(!S.sample||S.ui.brief.busy)return;
+  S.ui.brief={busy:true,text:""};renderMain();
+  const prompt=SYSTEM_PROMPT+"\n\n"+contextBlock()+`\n\nTÂCHE : brief du jour. À partir des DONNÉES ci-dessous uniquement, donne en 120 mots maximum :
+1) ce qui exige mon attention aujourd'hui (trois lignes au plus) ;
+2) le principal risque ou blocage ;
+3) un titre NEXT BEST ACTION suivi d'une seule action spécifique, faisable aujourd'hui.
+N'invente aucun élément absent des données. Si les données sont maigres, dis quelle information ajouter en premier.
+
+DONNÉES (USER-PROVIDED) :
+${compactSnapshot()}`;
+  try{
+    const r=await S.sample(prompt,{cache:false,onText:({text})=>{S.ui.brief.text=text;const o=$("#brief-out");if(o)o.innerHTML=md(text);else if(S.ui.tab==="today")renderMain()}});
+    S.ui.brief={busy:false,text:r.text};Store.setProfile({lastBrief:{date:localISO(),text:r.text}});
+  }catch(e){S.ui.brief={busy:false,text:S.ui.brief.text};const m=aiError(e);if(m)toast(m)}
+  renderAll();
+}
+async function runCapture(){
+  const note=(S.ui.draft.capture||"").trim();if(!note||S.ui.capture.busy)return;
+  if(!S.sample||S.ai!=="on"){toast("Claude n'est pas disponible dans cette vue.");return}
+  S.ui.capture={busy:true,result:null};renderMain();
+  const C=vals("contacts").map(c=>`${c.id}: ${c.name} — ${c.role||"?"} — ${c.org||"?"}`).join("\n")||"(aucun)";
+  const P=vals("prospects").map(p=>`${p.id}: ${p.name} — ${p.position||"?"} — ${p.club||"?"}`).join("\n")||"(aucun)";
+  const prompt=`Tu structures la note brute d'un agent de football (Stage ${S.profile.stage}). Date du jour : ${localISO()}. Convertis les dates relatives (« vendredi », « demain », « la semaine prochaine ») en dates AAAA-MM-JJ postérieures ou égales à aujourd'hui.
+Règles :
+- N'extrais que ce que la note dit. N'invente rien.
+- Statut des faits : USER-PROVIDED si l'agent l'affirme ou l'a constaté ; RUMOUR si c'est rapporté par un tiers ou non confirmé (« il paraît », « on m'a dit », « il cherche » dit par quelqu'un) ; INFERENCE si c'est une déduction.
+- N'extrais aucune donnée de santé (blessure, médical, psychologique) : mets seulement "sensitive_flag": true.
+- age_info : "mineur" si moins de 18 ans est indiqué, "majeur" si 18 ans ou plus est indiqué, sinon "inconnu".
+- Associe les personnes aux fiches existantes par match_id quand c'est clairement la même personne, sinon null.
+Contacts existants (id: nom — rôle — organisation) :
+${C}
+Prospects existants (id: nom — poste — club) :
+${P}
+Rôles possibles : ${ROLES.join(", ")}.
+
+Réponds avec UNIQUEMENT un objet JSON de cette forme :
+{"summary":"une phrase","contacts":[{"name":"","role":null,"org":null,"match_id":null}],"prospects":[{"name":"","position":null,"club":null,"age_info":"inconnu","match_id":null}],"interactions":[{"contact_name":"","date":"AAAA-MM-JJ","summary":""}],"facts":[{"about":"","text":"","status":"USER-PROVIDED"}],"tasks":[{"title":"","due":null}],"open_questions":[""],"sensitive_flag":false}
+
+NOTE :
+"""
+${note.slice(0,20000)}
+"""`;
+  try{
+    const r=await S.sample.json(prompt,{cache:false});
+    const arr=k=>Array.isArray(r?.[k])?r[k].filter(x=>x&&typeof x==="object").map(x=>({...x,_on:true})):[];
+    S.ui.capture={busy:false,result:{summary:String(r?.summary||""),contacts:arr("contacts").filter(x=>x.name),prospects:arr("prospects").filter(x=>x.name),
+      interactions:arr("interactions").filter(x=>x.contact_name&&x.summary),facts:arr("facts").filter(x=>x.text),tasks:arr("tasks").filter(x=>x.title),
+      open_questions:Array.isArray(r?.open_questions)?r.open_questions.filter(q=>typeof q==="string"&&q.trim()):[],sensitive_flag:!!r?.sensitive_flag}};
+  }catch(e){S.ui.capture={busy:false,result:null};const m=aiError(e);if(m)toast(m)}
+  renderAll();
+}
+async function applyCapture(){
+  const r=S.ui.capture.result;if(!r)return;const t=localISO();
+  const iso=d=>/^\d{4}-\d{2}-\d{2}$/.test(d||"")?d:null;
+  const byName={};const norm=s=>String(s||"").trim().toLowerCase();
+  for(const c of vals("contacts"))byName[norm(c.name)]=cl(c);
+  const touched={};
+  for(const x of r.contacts.filter(x=>x._on)){
+    let c=x.match_id&&S.data.contacts[x.match_id]?cl(S.data.contacts[x.match_id]):byName[norm(x.name)]||null;
+    if(!c)c={id:uid(),name:x.name,role:ROLES.includes(x.role)?x.role:(x.role?"Autre":""),org:x.org||"",journal:[]};
+    else{if(!c.role&&x.role)c.role=ROLES.includes(x.role)?x.role:"Autre";if(!c.org&&x.org)c.org=x.org}
+    byName[norm(c.name)]=c;byName[norm(x.name)]=c;touched[c.id]=c;
+  }
+  for(const x of r.interactions.filter(x=>x._on)){
+    let c=byName[norm(x.contact_name)];
+    if(!c){c={id:uid(),name:x.contact_name,role:"",org:"",journal:[]};byName[norm(x.contact_name)]=c}
+    const d=iso(x.date)||t;c.journal=[...(c.journal||[]),{date:d,summary:x.summary}];
+    if(!c.lastInteraction||d>c.lastInteraction)c.lastInteraction=d;touched[c.id]=c;
+  }
+  const pBy={};for(const p of vals("prospects"))pBy[norm(p.name)]=cl(p);
+  const pTouched={};
+  for(const x of r.prospects.filter(x=>x._on)){
+    let p=x.match_id&&S.data.prospects[x.match_id]?cl(S.data.prospects[x.match_id]):pBy[norm(x.name)]||null;
+    const age=["mineur","majeur","inconnu"].includes(x.age_info)?x.age_info:"inconnu";
+    if(!p)p={id:uid(),name:x.name,position:x.position||"",club:x.club||"",ageStatus:age,ageSource:age!=="inconnu"?"Note (USER-PROVIDED)":"",stage:"DISCOVERED",contractStatus:"UNKNOWN",facts:[]};
+    else{if(!p.position&&x.position)p.position=x.position;if(!p.club&&x.club)p.club=x.club;if(p.ageStatus==="inconnu"&&age!=="inconnu")p.ageStatus=age}
+    pBy[norm(x.name)]=p;pTouched[p.id]=p;
+  }
+  for(const f of r.facts.filter(x=>x._on)){
+    const st=FACT_ST.includes(f.status)?f.status:"USER-PROVIDED";
+    const p=pBy[norm(f.about)];
+    if(p){p.facts=[...(p.facts||[]),{text:f.text,status:st,source:"Capture du "+fmtDate(t)}];pTouched[p.id]=p;continue}
+    const c=byName[norm(f.about)];
+    if(c){c.notes=((c.notes?c.notes+"\n":"")+`[${st}] ${f.text}`);touched[c.id]=c}
+  }
+  const ops=[...Object.values(touched).map(c=>Store.put("contacts",c)),...Object.values(pTouched).map(p=>Store.put("prospects",p)),
+    ...r.tasks.filter(x=>x._on).map(x=>Store.put("tasks",{title:x.title,due:iso(x.due)||"",done:false}))];
+  await Promise.all(ops);
+  const n=Object.keys(touched).length+Object.keys(pTouched).length+r.tasks.filter(x=>x._on).length;
+  S.ui.capture={busy:false,result:null};S.ui.draft.capture="";
+  toast(`${n} fiche${n>1?"s":""} enregistrée${n>1?"s":""}.`);renderAll();
+}
+async function newQuestion(){
+  const src=S.data.sources[S.ui.quizSrc];if(!src||!src.text||!S.sample)return;
+  S.ui.quiz={loading:true};renderMain();
+  const txt=src.text,W=14000;const start=txt.length>W?Math.floor(Math.random()*(txt.length-W)):0;const ex=txt.slice(start,start+W);
+  const recent=vals("quiz").sort((a,b)=>b.ts-a.ts).slice(0,6).map(h=>h.reference).filter(Boolean);
+  const prompt=`Tu prépares un candidat à l'examen d'agent de football FIFA (QCM, livre ouvert). Utilise UNIQUEMENT l'extrait ci-dessous. N'invente aucun article : la référence doit figurer dans l'extrait.
+Source : ${src.title} — ${src.issuer||"émetteur non précisé"} — version ${src.versionDate||"non datée"}.
+${S.ui.quizTheme?`Thème souhaité si l'extrait le couvre : ${S.ui.quizTheme}.`:""}
+${recent.length?`Évite ces références déjà posées : ${recent.join(" ; ")}.`:""}
+Crée UNE question de mise en situation (cas concret vécu par un agent), quatre options plausibles, une seule correcte. Les mauvaises options doivent correspondre à des erreurs fréquentes.
+Réponds avec UNIQUEMENT un objet JSON : {"question":"","options":["","","",""],"answer":0,"reference":"article et alinéa tels qu'écrits dans l'extrait","quote":"phrase copiée mot pour mot depuis l'extrait, 35 mots maximum","explanation":"2 ou 3 phrases","trap":"le piège classique en une phrase"}
+
+EXTRAIT :
+"""
+${ex}
+"""`;
+  try{
+    const q=await S.sample.json(prompt,{cache:false});
+    if(!q||typeof q.question!=="string"||!Array.isArray(q.options)||q.options.length!==4||![0,1,2,3].includes(Number(q.answer)))throw{code:"invalid_json"};
+    q.answer=Number(q.answer);q.options=q.options.map(String);
+    const n=s=>String(s||"").toLowerCase().replace(/[’‘]/g,"'").replace(/[«»“”"]/g,"").replace(/\s+/g," ").trim();
+    const verified=!!q.quote&&n(q.quote).length>12&&n(txt).includes(n(q.quote));
+    S.ui.quiz={q,verified,startedAt:Date.now(),picked:null,srcId:src.id,srcTitle:src.title};
+  }catch(e){S.ui.quiz=null;const m=aiError(e);if(m)toast(m)}
+  renderMain();
+}
+function pickAnswer(i){
+  const Q=S.ui.quiz;if(!Q||!Q.q||Q.picked!=null)return;
+  Q.picked=i;Q.seconds=Math.floor((Date.now()-Q.startedAt)/1000);clearInterval(timerInt);
+  Store.put("quiz",{ts:Date.now(),sourceId:Q.srcId,question:Q.q.question.slice(0,400),reference:String(Q.q.reference||"").slice(0,120),correct:i===Q.q.answer,seconds:Q.seconds,verified:Q.verified});
+  renderMain();
+}
+async function runEval(id){
+  const c=EVALS.find(x=>x.id===id);if(!c||!S.sample)return;
+  S.ui.evalRun[id]={busy:true,text:""};S.ui.evalChecks[id]={};renderMain();
+  ctl=new AbortController();
+  try{
+    const r=await S.sample([{role:"user",content:buildRules("libre","")},{role:"user",content:c.prompt}],{cache:false,signal:ctl.signal,onText:({text})=>{S.ui.evalRun[id].text=text;const o=$("#ev-"+id);if(o)o.innerHTML=md(text)}});
+    S.ui.evalRun[id]={busy:false,text:r.text};
+  }catch(e){S.ui.evalRun[id]={busy:false,text:e&&e.text||""};const m=aiError(e);if(m)toast(m)}
+  ctl=null;renderMain();
+}
+
+/* ============ examples ============ */
+function loadExamples(){
+  const t=localISO();
+  const C=[
+    {name:"Responsable recrutement d'un club de N2 (exemple)",role:"Recruteur / scout",org:"Club fictif FC",channel:"WhatsApp",why:"Voit passer beaucoup de profils régionaux de 17 à 21 ans.",value:"Lui remonter des profils filmés et vérifiés, sans le solliciter pour autre chose.",lastInteraction:addDays(t,-62),nextAction:"Message court pour reprendre contact après le tournoi",nextDate:t,journal:[{date:addDays(t,-62),summary:"Rencontré au tournoi U19 de la ligue (exemple)."}],example:true},
+    {name:"Agent licencié installé (exemple)",role:"Agent",org:"Indépendant",channel:"LinkedIn",why:"Peut décrire la pratique réelle des mandats et des négociations.",value:"Contenu, veille réglementaire, aide ponctuelle sur la prospection.",lastInteraction:"",nextAction:"Demander 20 minutes d'échange sur le métier",nextDate:addDays(t,3),journal:[],example:true}
+  ];
+  const P=[
+    {name:"Milieu défensif, 19 ans (exemple)",position:"Milieu défensif",club:"Club fictif FC",league:"National 2",ageStatus:"majeur",ageSource:"Exemple",contractEnd:"",contractStatus:"UNKNOWN",stage:"WATCHLIST",whyInteresting:"Titulaire régulier en N2 à 19 ans.",whyNow:"Situation contractuelle inconnue : à vérifier avant tout.",whyMe:"",access:"Via le responsable recrutement du club (contact exemple).",redFlags:"Représentation actuelle inconnue.",nextAction:"Voir deux matchs complets avant tout contact",nextDate:addDays(t,7),facts:[{text:"Titulaire sur les derniers matchs observés",status:"USER-PROVIDED",source:"Observation (exemple)"}],example:true},
+    {name:"Ailier de centre de formation (exemple)",position:"Ailier",club:"Centre de formation fictif",league:"U19 National",ageStatus:"inconnu",ageSource:"",contractEnd:"",contractStatus:"UNKNOWN",stage:"DISCOVERED",whyInteresting:"Repéré en vidéo.",whyNow:"",whyMe:"",access:"",redFlags:"Âge non vérifié.",nextAction:"Vérifier l'âge et le cadre applicable",nextDate:t,facts:[],example:true}
+  ];
+  const T=[{title:"Coller le règlement FIFA sur les agents (version en vigueur) dans Sources",due:t,done:false,example:true},{title:"Faire 10 questions d'examen chronométrées",due:addDays(t,1),done:false,example:true}];
+  C.forEach(x=>Store.put("contacts",x));P.forEach(x=>Store.put("prospects",x));T.forEach(x=>Store.put("tasks",x));
+  toast("Exemples chargés. Retire-les depuis Réglages.");
+}
+async function clearExamples(){for(const c of COLS)for(const x of vals(c).filter(x=>x.example))await Store.del(c,x.id);toast("Exemples retirés.")}
+
+/* ============ actions ============ */
+const DEFAULTS={contacts:()=>({name:"",role:"",org:"",channel:"",why:"",value:"",lastInteraction:"",nextAction:"",nextDate:"",notes:"",journal:[]}),
+  prospects:()=>({name:"",position:"",club:"",league:"",ageStatus:"inconnu",ageSource:"",contractEnd:"",contractStatus:"UNKNOWN",stage:"DISCOVERED",whyInteresting:"",whyNow:"",whyMe:"",access:"",redFlags:"",nextAction:"",nextDate:"",facts:[]}),
+  sources:()=>({title:"",issuer:"",versionDate:"",url:"",text:"",include:true})};
+const TAB_OF={contacts:"network",prospects:"prospects",sources:"sources"};
+const top0=()=>{try{window.scrollTo({top:0,behavior:"auto"})}catch(e){}};
+const A={
+  tab:d=>{S.ui.tab=d.tab;S.ui.confirm=null;if(d.tab!=="settings")S.ui.prof=null;renderAll();top0()},
+  new:d=>{S.ui.edit={col:d.col,obj:DEFAULTS[d.col](),isNew:true};S.ui.tab=TAB_OF[d.col];S.ui.journal={date:"",summary:""};renderAll();top0();setTimeout(()=>{const i=$("#editor input");if(i)i.focus()},30)},
+  edit:d=>{const r=S.data[d.col]?.[d.id];if(!r)return;S.ui.edit={col:d.col,obj:cl(r),isNew:false};S.ui.tab=TAB_OF[d.col];S.ui.confirm=null;S.ui.journal={date:"",summary:""};renderAll();top0()},
+  "cancel-edit":()=>{S.ui.edit=null;S.ui.confirm=null;renderAll()},
+  "save-edit":()=>{const e=S.ui.edit;if(!e)return;const o=e.obj;if(!String(o.name||"").trim()){toast("Indique au moins un nom.");return}
+    o.name=o.name.trim();if(o.facts)o.facts=o.facts.filter(f=>String(f.text||"").trim());Store.put(e.col,o);S.ui.edit=null;toast("Enregistré.");renderAll()},
+  "save-source":()=>{const e=S.ui.edit;if(!e)return;const o=e.obj;if(!String(o.title||"").trim()||!String(o.text||"").trim()){toast("Titre et texte sont nécessaires.");return}
+    const MAX=100000;const text=o.text;
+    if(text.length<=MAX){Store.put("sources",o)}else{const parts=Math.ceil(text.length/MAX);
+      for(let k=0;k<parts;k++){Store.put("sources",{...o,id:k===0?o.id:undefined,title:`${o.title.replace(/ \(partie \d+\/\d+\)$/,"")} (partie ${k+1}/${parts})`,text:text.slice(k*MAX,(k+1)*MAX)})}
+      toast(`Texte long : découpé en ${parts} parties.`)}
+    S.ui.edit=null;renderAll()},
+  askdel:d=>{S.ui.confirm=d.key||null;renderMain()},
+  del:d=>{Store.del(d.col,d.id);if(S.ui.edit&&S.ui.edit.obj.id===d.id)S.ui.edit=null;if(d.col==="threads"&&S.ui.threadId===d.id)S.ui.threadId=null;S.ui.confirm=null;toast("Supprimé.");renderAll()},
+  "add-journal":()=>{const j=S.ui.journal;if(!S.ui.edit||!String(j.summary||"").trim())return;const o=S.ui.edit.obj;const d=j.date||localISO();
+    o.journal=[...(o.journal||[]),{date:d,summary:j.summary.trim()}];if(!o.lastInteraction||d>o.lastInteraction)o.lastInteraction=d;S.ui.journal={date:"",summary:""};renderMain()},
+  "rm-journal":d=>{const o=S.ui.edit?.obj;if(!o)return;o.journal.splice(Number(d.i),1);o.lastInteraction=(o.journal.map(x=>x.date).sort().pop())||o.lastInteraction;renderMain()},
+  "add-fact":()=>{const o=S.ui.edit?.obj;if(!o)return;o.facts=[...(o.facts||[]),{text:"",status:"USER-PROVIDED",source:""}];renderMain();setTimeout(()=>{const i=$(`#pf-t-${o.facts.length-1}`);if(i)i.focus()},30)},
+  "rm-fact":d=>{const o=S.ui.edit?.obj;if(!o)return;o.facts.splice(Number(d.i),1);renderMain()},
+  pfilter:d=>{S.ui.pFilter=d.v;renderMain()},
+  send:()=>send(),
+  stop:()=>{if(ctl)ctl.abort()},
+  "new-thread":()=>{S.ui.threadId=null;S.ui.attach="";S.ui.confirm=null;renderMain();const i=$("#cp-in");if(i)i.focus()},
+  "open-thread":d=>{const t=S.data.threads[d.id];if(!t)return;S.ui.threadId=d.id;S.ui.mode=t.mode;S.ui.confirm=null;renderMain()},
+  mode:d=>{S.ui.mode=d.mode;const t=S.ui.threadId&&S.data.threads[S.ui.threadId];if(t){Store.put("threads",{...cl(t),mode:d.mode})}renderMain()},
+  starter:d=>{const th=S.ui.threadId&&S.data.threads[S.ui.threadId];const m=th?th.mode:S.ui.mode;S.ui.draft.copilot=(STARTERS[m]||[])[Number(d.i)]||"";renderMain();const i=$("#cp-in");if(i){i.focus();i.setSelectionRange(i.value.length,i.value.length)}},
+  "copy-msg":d=>{const t=S.data.threads[S.ui.threadId];const m=t&&t.messages[Number(d.i)];if(m)copy(m.content)},
+  "nba-task":d=>{const t=S.data.threads[S.ui.threadId];const m=t&&t.messages[Number(d.i)];const a=m?extractNBA(m.content):"";
+    if(!a){toast("Aucune NEXT BEST ACTION repérée dans cette réponse.");return}Store.put("tasks",{title:a,due:localISO(),done:false});toast("Tâche créée pour aujourd'hui.")},
+  "copilot-from":d=>{const r=S.data[d.col]?.[d.id];if(!r)return;S.ui.edit=null;S.ui.threadId=null;S.ui.attach=`${d.col}:${d.id}`;S.ui.mode=d.mode;
+    S.ui.draft.copilot=d.mode==="juridique"?`Avant toute approche de ${r.name} (âge : ${r.ageStatus}), quelles règles s'appliquent et que dois-je vérifier ?`:d.mode==="reseau"?`Comment préparer mon prochain échange avec ${r.name} ? Objectif : ${r.nextAction||"[à préciser]"}.`:`Analyse ce prospect à partir de sa fiche et dis-moi ce qui manque avant d'aller plus loin.`;
+    S.ui.tab="copilot";renderAll();top0()},
+  "copilot-quiz":()=>{const Q=S.ui.quiz;if(!Q||!Q.q)return;S.ui.threadId=null;S.ui.attach="";S.ui.mode="examen";
+    S.ui.draft.copilot=`Question d'entraînement : ${Q.q.question}\nRéponse attendue : ${Q.q.options[Q.q.answer]} (${Q.q.reference}).\nJ'ai répondu : ${Q.q.options[Q.picked]}. Explique la règle, donne un second cas pratique et le piège classique.`;S.ui.tab="copilot";renderAll();top0()},
+  "capture-run":()=>runCapture(),
+  "capture-apply":()=>applyCapture(),
+  "capture-clear":()=>{S.ui.capture={busy:false,result:null};renderMain()},
+  "task-add":()=>{const t=S.ui.task;if(!String(t.title||"").trim())return;Store.put("tasks",{title:t.title.trim(),due:t.due||"",done:false});S.ui.task={title:"",due:""};renderMain();const i=$("#t-title");if(i)i.focus()},
+  "task-toggle":d=>{const t=S.data.tasks[d.id];if(!t)return;const done=!t.done;Store.put("tasks",{...cl(t),done,doneAt:done?Date.now():null})},
+  "quiz-new":()=>newQuestion(),
+  "quiz-pick":d=>pickAnswer(Number(d.i)),
+  brief:()=>runBrief(),
+  "eval-run":d=>runEval(d.id),
+  "eval-save":d=>{const c=EVALS.find(x=>x.id===d.id);const chk=S.ui.evalChecks[d.id]||{};const score=c.checks.filter((_,i)=>chk[i]).length;
+    Store.put("evals",{caseId:d.id,ts:Date.now(),checks:cl(chk),score,output:String(S.ui.evalRun[d.id]?.text||"").slice(0,12000)});toast(`Résultat enregistré : ${score}/${c.checks.length}.`)},
+  "save-profile":()=>{const p=S.ui.prof;p.stage=Math.max(0,Math.min(5,Number(p.stage)||0));p.represented=Math.max(0,Number(p.represented)||0);p.coolDays=Math.max(7,Number(p.coolDays)||45);
+    const {lastBrief,...rest}=p;Store.setProfile(rest);S.ui.prof=null;toast("Contexte enregistré.");renderAll()},
+  "copy-prompt":()=>copy(SYSTEM_PROMPT+"\n\n"+contextBlock()),
+  export:()=>exportData(),
+  "import-apply":async()=>{const ip=S.ui.importPreview;if(!ip)return;S.ui.importPreview=null;let n=0;
+    if(ip.profile){const {lastBrief,...rest}=ip.profile;await Store.setProfile(rest)}
+    for(const c of COLS)for(const r of Object.values(ip.data?.[c]||{})){if(r&&typeof r==="object"){await Store.put(c,r);n++}}
+    toast(`${n} fiches importées.`);renderAll()},
+  "import-cancel":()=>{S.ui.importPreview=null;renderMain()},
+  "examples-load":()=>loadExamples(),
+  "examples-clear":()=>clearExamples(),
+  wipe:async()=>{S.ui.confirm=null;for(const c of COLS)for(const x of vals(c))await Store.del(c,x.id);await Store.setProfile({...DEFAULT_PROFILE});S.ui.prof=null;S.ui.threadId=null;toast("Toutes les données ont été effacées.");renderAll()}
+};
+const CH={
+  attach:el=>{S.ui.attach=el.value;const t=S.ui.threadId&&S.data.threads[S.ui.threadId];if(t)Store.put("threads",{...cl(t),attach:el.value})},
+  rerender:()=>renderMain(),
+  import:el=>{const f=el.files&&el.files[0];if(!f)return;const rd=new FileReader();rd.onload=()=>{try{const p=JSON.parse(rd.result);if(p.app!=="agent-copilot"||!p.data)throw 0;S.ui.importPreview=p;renderMain()}catch(e){toast("Fichier non reconnu : utilise un export de cette page.")}};rd.readAsText(f)}
+};
+async function copy(text){try{await navigator.clipboard.writeText(text);toast("Copié.")}catch(e){toast("Copie impossible ici : sélectionne le texte à la main.")}}
+async function exportData(){
+  const payload=JSON.stringify({app:"agent-copilot",version:1,exportedAt:new Date().toISOString(),profile:S.profile,data:S.data},null,2);
+  if(!S.downloads){toast("Export indisponible dans cette vue.");return}
+  try{await S.downloads.save({filename:`agent-copilot-${localISO()}.json`,data:payload});toast("Export enregistré.")}
+  catch(e){if(e&&e.code!=="declined")toast("Export impossible dans cette vue.")}
+}
+
+document.addEventListener("click",e=>{
+  const el=e.target.closest("[data-act]");if(!el)return;
+  if(el.tagName==="LABEL")return;
+  const f=A[el.dataset.act];if(!f)return;
+  if(el.type!=="checkbox")e.preventDefault();
+  f(el.dataset,el);
+});
+document.addEventListener("input",e=>{const el=e.target;if(!el.dataset||!el.dataset.bind)return;setPath(S.ui,el.dataset.bind,el.type==="checkbox"?el.checked:el.value);if(el.dataset.live){renderMain();const n=$("#"+el.id);if(n){n.focus();n.setSelectionRange(n.value.length,n.value.length)}}});
+document.addEventListener("change",e=>{const el=e.target;if(el.dataset&&el.dataset.bind&&(el.type==="checkbox"||el.tagName==="SELECT"))setPath(S.ui,el.dataset.bind,el.type==="checkbox"?el.checked:el.value);if(el.dataset&&el.dataset.change&&CH[el.dataset.change])CH[el.dataset.change](el)});
+document.addEventListener("keydown",e=>{if((e.metaKey||e.ctrlKey)&&e.key==="Enter"){if(e.target.id==="cp-in"){e.preventDefault();send()}else if(e.target.id==="cap-in"){e.preventDefault();runCapture()}}});
+
+(function(){const h=(location.hash||"").slice(1);if(TABS.some(t=>t[0]===h))S.ui.tab=h})();
+Store.init();
+</script>
+
+</body></html>
