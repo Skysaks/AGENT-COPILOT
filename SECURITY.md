@@ -27,5 +27,5 @@ et les failles de dépendances déjà suivies en amont.
 - L'import n'accepte qu'un export de l'application (champ `app` vérifié) ; les fichiers inconnus sont refusés.
 - Les consignes interdisent au copilote de demander des données inutiles à la décision ; les mineurs déclenchent une vérification avant toute stratégie.
 - **Chaîne de build minimale** : aucune dépendance d'exécution ; une seule dépendance de développement
-  (Playwright, pour les tests), surveillée par Dependabot et `npm audit` en CI. Actions GitHub épinglées
+  (Playwright, pour les tests), contrôlée par `npm audit` à chaque exécution de la CI. Actions GitHub épinglées
   par empreinte SHA, jeton de CI en lecture seule.
