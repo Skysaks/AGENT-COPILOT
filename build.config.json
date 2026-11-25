@@ -1,0 +1,90 @@
+{
+  "name": "Agent Copilot",
+  "repo": "Skysaks/AGENT-COPILOT",
+  "lang": "fr",
+  "budgetKo": 450,
+  "pages": [
+    {
+      "src": "src/index.html",
+      "out": "dist/agent-copilot.html",
+      "site": "index.html",
+      "e2e": {
+        "ready": "#main, main",
+        "flows": [
+          {
+            "name": "les dix onglets",
+            "steps": [
+              {
+                "click": "[role=tab][data-tab=copilot]"
+              },
+              {
+                "click": "[role=tab][data-tab=capture]"
+              },
+              {
+                "click": "[role=tab][data-tab=network]"
+              },
+              {
+                "click": "[role=tab][data-tab=prospects]"
+              },
+              {
+                "click": "[role=tab][data-tab=tasks]"
+              },
+              {
+                "click": "[role=tab][data-tab=exam]"
+              },
+              {
+                "click": "[role=tab][data-tab=sources]"
+              },
+              {
+                "click": "[role=tab][data-tab=tests]"
+              },
+              {
+                "click": "[role=tab][data-tab=settings]"
+              },
+              {
+                "click": "[role=tab][data-tab=today]"
+              }
+            ]
+          },
+          {
+            "name": "exemples chargés puis réseau et prospects",
+            "steps": [
+              {
+                "click": "[data-act=examples-load]"
+              },
+              {
+                "click": "[role=tab][data-tab=network]"
+              },
+              {
+                "click": "[role=tab][data-tab=prospects]"
+              },
+              {
+                "click": "[role=tab][data-tab=tasks]"
+              }
+            ]
+          }
+        ]
+      },
+      "captures": {
+        "desktop": [
+          {
+            "click": "[data-act=examples-load]",
+            "wait": 4500
+          }
+        ],
+        "mobile": [
+          {
+            "click": "[data-act=examples-load]",
+            "wait": 4500
+          }
+        ]
+      }
+    }
+  ],
+  "card": {
+    "kicker": "Football · agent de joueurs",
+    "tagline": "Réviser l'examen FIFA, tenir son réseau, décider sur des faits sourcés.",
+    "background": "#0F1A14",
+    "accent": "#2F8F63"
+  }
+}

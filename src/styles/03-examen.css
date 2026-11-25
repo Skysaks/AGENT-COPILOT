@@ -1,0 +1,21 @@
+/* exam */
+.qopt{display:block;width:100%;text-align:left;border:1px solid var(--line);background:var(--surface);border-radius:6px;padding:10px 12px;cursor:pointer;font-size:15px}
+.qopt:hover:not(:disabled){border-color:var(--pitch)}
+.qopt.right{border-color:var(--pitch);background:var(--pitch-soft)}
+.qopt.wrong{border-color:var(--red);background:var(--red-soft)}
+.timer{font:500 22px var(--f-mono);font-variant-numeric:tabular-nums}
+.quote{border-left:3px solid var(--pitch);padding:4px 10px;font-size:14px;background:var(--sunk);border-radius:0 4px 4px 0}
+
+.stagebar{display:flex;gap:4px;flex-wrap:wrap}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(16px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--paper);padding:9px 14px;border-radius:6px;font-size:14px;z-index:50;max-width:calc(100% - 32px)}
+pre.prompt{white-space:pre-wrap;font:12.5px/1.5 var(--f-mono);background:var(--sunk);padding:12px;border-radius:6px;max-height:420px;overflow:auto;margin:0}
+details summary{cursor:pointer;font-weight:500}
+
+@media (max-width:760px){
+  .copilot{grid-template-columns:1fr}
+  .threads{position:static;grid-auto-flow:column;grid-auto-columns:minmax(150px,200px);overflow-x:auto}
+  .brand .sub{display:none}
+  .ladder span{display:none}
+  .msg-u{max-width:95%}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
